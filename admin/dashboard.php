@@ -110,7 +110,6 @@ try {
                 <a href="parcels.php">Parcel Management</a>
                 <a href="#" onclick="alert('Coming soon!')">Manage Users</a>
                 <a href="#" onclick="alert('Coming soon!')">View All Buses</a>
-                <a href="#" onclick="alert('Coming soon!')">System Reports</a>
             </div>
         </div>
     </div>
@@ -269,41 +268,11 @@ try {
                         <a href="parcels.php?status=cancelled" class="btn" style="background: #e74c3c; color: white; text-align: center; text-decoration: none;">
                             ❌ View Cancelled Parcels
                         </a>
-                        <button class="btn" style="background: #17a2b8; color: white;" onclick="alert('Coming soon!')">
-                            📊 Generate Reports
-                        </button>
-                        <button class="btn" style="background: #6c757d; color: white;" onclick="alert('Coming soon!')">
-                            ⚙️ System Settings
-                        </button>
+                        
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- System Health Status -->
-        <div class="alert alert_info mt_2">
-            <h4>🔧 System Health Status</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                <div>
-                    <strong>🟢 Bus Booking System:</strong><br>
-                    Operational - Passengers can search and book bus tickets normally.
-                </div>
-                <div>
-                    <strong>🟢 Parcel Delivery System:</strong><br>
-                    Operational - Parcel bookings and tracking are functioning properly.
-                </div>
-                <div>
-                    <strong>🟢 Operator Management:</strong><br>
-                    Operational - Operators can manage buses, schedules, and parcels.
-                </div>
-                <div>
-                    <strong>🟡 Advanced Features:</strong><br>
-                    In Development - SMS notifications, payment gateway, and analytics.
-                </div>
-            </div>
-        </div>
-
-        
     </main>
 
     <!-- Footer -->
