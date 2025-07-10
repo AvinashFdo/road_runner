@@ -45,6 +45,112 @@ if (!empty($tracking_number)) {
     }
 }
 
+// Generate simple tracking receipt (same as parcel_confirmation.php)
+function generateTrackingReceipt($parcel_info) {
+    $content = "ROAD RUNNER - PARCEL DELIVERY RECEIPT\n\n";
+    $content .= "=====================================\n";
+    $content .= "TRACKING INFORMATION\n";
+    $content .= "=====================================\n";
+    $content .= "Tracking Number: " . $parcel_info['tracking_number'] . "\n";
+    $content .= "Booking Date: " . date('F j, Y \a\t g:i A', strtotime($parcel_info['created_at'])) . "\n";
+    $content .= "Status: " . ucfirst($parcel_info['status']) . "\n";
+    $content .= "Delivery Date: " . date('F j, Y', strtotime($parcel_info['travel_date'])) . "\n";
+    
+    $content .= "\n=====================================\n";
+    $content .= "ROUTE INFORMATION\n";
+    $content .= "=====================================\n";
+    $content .= "Route: " . $parcel_info['route_name'] . "\n";
+    $content .= "From: " . $parcel_info['origin'] . "\n";
+    $content .= "To: " . $parcel_info['destination'] . "\n";
+    $content .= "Distance: " . $parcel_info['distance_km'] . " km\n";
+    if ($parcel_info['estimated_duration']) {
+        $content .= "Estimated Duration: " . $parcel_info['estimated_duration'] . "\n";
+    }
+    
+    $content .= "\n=====================================\n";
+    $content .= "SENDER DETAILS\n";
+    $content .= "=====================================\n";
+    $content .= "Name: " . $parcel_info['sender_name'] . "\n";
+    $content .= "Phone: " . $parcel_info['sender_phone'] . "\n";
+    $content .= "Email: " . $parcel_info['sender_email'] . "\n";
+    
+    $content .= "\n=====================================\n";
+    $content .= "RECEIVER DETAILS\n";
+    $content .= "=====================================\n";
+    $content .= "Name: " . $parcel_info['receiver_name'] . "\n";
+    $content .= "Phone: " . $parcel_info['receiver_phone'] . "\n";
+    $content .= "Address: " . $parcel_info['receiver_address'] . "\n";
+    
+    $content .= "\n=====================================\n";
+    $content .= "PARCEL DETAILS\n";
+    $content .= "=====================================\n";
+    $content .= "Type: " . ($parcel_info['parcel_type'] ?: 'General') . "\n";
+    $content .= "Weight: " . $parcel_info['weight_kg'] . " kg\n";
+    $content .= "Delivery Cost: LKR " . number_format($parcel_info['delivery_cost'], 2) . "\n";
+    
+    $content .= "\n=====================================\n";
+    $content .= "TRACKING HISTORY\n";
+    $content .= "=====================================\n";
+    
+    // Add current status info
+    $status_text = ucfirst($parcel_info['status']);
+    switch($parcel_info['status']) {
+        case 'pending':
+            $content .= "Current Status: Parcel ready for dispatch\n";
+            break;
+        case 'in_transit':
+            $content .= "Current Status: Parcel is traveling to destination\n";
+            break;
+        case 'delivered':
+            $content .= "Current Status: Parcel has been delivered\n";
+            break;
+        case 'cancelled':
+            $content .= "Current Status: Parcel delivery was cancelled\n";
+            break;
+        default:
+            $content .= "Current Status: " . $status_text . "\n";
+    }
+    
+    $content .= "Last Updated: " . date('F j, Y \a\t g:i A') . "\n";
+    
+    $content .= "\n=====================================\n";
+    $content .= "IMPORTANT INFORMATION\n";
+    $content .= "=====================================\n";
+    $content .= "• Track your parcel online using tracking number\n";
+    $content .= "• Receiver will be notified upon arrival\n";
+    $content .= "• Pickup from destination bus station within 24 hours\n";
+    $content .= "• Contact us for any queries or support\n";
+    $content .= "• Insurance coverage up to LKR 10,000 included\n";
+    
+    $content .= "\n=====================================\n";
+    $content .= "CONTACT INFORMATION\n";
+    $content .= "=====================================\n";
+    $content .= "Road Runner Customer Support\n";
+    $content .= "Phone: +94 11 123 4567\n";
+    $content .= "Email: parcels@roadrunner.lk\n";
+    $content .= "Website: www.roadrunner.lk\n";
+    $content .= "Tracking: www.roadrunner.lk/track\n";
+    
+    $content .= "\n=====================================\n";
+    $content .= "Thank you for choosing Road Runner!\n";
+    $content .= "Your parcel is in safe hands!\n";
+    $content .= "=====================================\n";
+    
+    return $content;
+}
+
+// Handle receipt download
+if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $parcel_info) {
+    $filename = 'RoadRunner_Tracking_' . $tracking_number . '_' . date('Ymd_His') . '.txt';
+    $content = generateTrackingReceipt($parcel_info);
+    
+    header('Content-Type: text/plain; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Length: ' . strlen($content));
+    echo $content;
+    exit();
+}
+
 // Generate tracking history timeline
 function generateTrackingHistory($parcel) {
     $history = [];
@@ -85,23 +191,23 @@ function generateTrackingHistory($parcel) {
     
     // Add dispatch step
     $dispatch_time = $travel_date - (2 * 3600); // 2 hours before travel
-    if ($current_time >= $dispatch_time || $parcel['status'] === 'in_transit') {
+    if ($current_time >= $dispatch_time || $parcel['status'] === 'in_transit' || $parcel['status'] === 'delivered') {
         $history[] = [
             'status' => 'Dispatched',
             'description' => 'Parcel loaded onto bus from ' . $parcel['origin'],
             'timestamp' => $current_time >= $dispatch_time ? date('M j, Y g:i A', $dispatch_time) : 'Scheduled',
-            'completed' => $current_time >= $dispatch_time || $parcel['status'] === 'in_transit',
+            'completed' => $current_time >= $dispatch_time || $parcel['status'] === 'in_transit' || $parcel['status'] === 'delivered',
             'icon' => '🚛'
         ];
     }
     
     // Add in transit step
-    if ($current_time >= $travel_date || $parcel['status'] === 'in_transit') {
+    if ($current_time >= $travel_date || $parcel['status'] === 'in_transit' || $parcel['status'] === 'delivered') {
         $history[] = [
             'status' => 'In Transit',
             'description' => 'Parcel is traveling to ' . $parcel['destination'],
             'timestamp' => $current_time >= $travel_date ? date('M j, Y g:i A', $travel_date) : 'Scheduled',
-            'completed' => $current_time >= $travel_date || $parcel['status'] === 'in_transit',
+            'completed' => $current_time >= $travel_date || $parcel['status'] === 'in_transit' || $parcel['status'] === 'delivered',
             'icon' => '🚌'
         ];
     }
@@ -117,26 +223,15 @@ function generateTrackingHistory($parcel) {
             'icon' => '📍'
         ];
         
-        // Add notification step
-        if ($current_time >= $arrival_time || $parcel['status'] === 'delivered') {
-            $notification_time = $arrival_time + (1800); // 30 minutes after arrival
-            $history[] = [
-                'status' => 'Receiver Notified',
-                'description' => 'Pickup notification sent to ' . $parcel['receiver_name'],
-                'timestamp' => $current_time >= $notification_time ? date('M j, Y g:i A', $notification_time) : 'Pending',
-                'completed' => $current_time >= $notification_time || $parcel['status'] === 'delivered',
-                'icon' => '📱'
-            ];
-        }
+        // Skip receiver notification step - not needed in timeline
     }
     
     // Add delivery step if delivered
     if ($parcel['status'] === 'delivered') {
-        $delivery_time = $arrival_time + (6 * 3600); // Assume delivered within 6 hours of arrival
         $history[] = [
             'status' => 'Delivered',
-            'description' => 'Parcel successfully delivered to receiver',
-            'timestamp' => date('M j, Y g:i A', $delivery_time),
+            'description' => 'Parcel successfully delivered and picked up',
+            'timestamp' => date('M j, Y', strtotime($parcel['travel_date'])), // Just show date
             'completed' => true,
             'icon' => '✅'
         ];
@@ -145,21 +240,46 @@ function generateTrackingHistory($parcel) {
     return $history;
 }
 
-// Calculate estimated delivery time
+// Get estimated delivery status
 function getEstimatedDelivery($parcel) {
     $travel_date = strtotime($parcel['travel_date']);
-    $estimated_arrival = $travel_date + (4 * 3600); // 4 hours after departure
+    $current_time = time();
     
-    if ($parcel['status'] === 'delivered') {
-        return ['status' => 'delivered', 'message' => 'Parcel has been delivered'];
-    } elseif ($parcel['status'] === 'cancelled') {
-        return ['status' => 'cancelled', 'message' => 'Parcel delivery was cancelled'];
-    } elseif (time() >= $estimated_arrival) {
-        return ['status' => 'ready', 'message' => 'Parcel is ready for pickup at destination'];
-    } elseif (time() >= $travel_date) {
-        return ['status' => 'transit', 'message' => 'Parcel is in transit to destination'];
-    } else {
-        return ['status' => 'scheduled', 'message' => 'Parcel is scheduled for delivery on ' . date('M j, Y', $travel_date)];
+    switch ($parcel['status']) {
+        case 'delivered':
+            return [
+                'status' => 'delivered',
+                'message' => 'Your parcel has been successfully delivered and picked up.'
+            ];
+        case 'cancelled':
+            return [
+                'status' => 'cancelled',
+                'message' => 'This parcel delivery has been cancelled.'
+            ];
+        case 'in_transit':
+            $arrival_time = $travel_date + (4 * 3600);
+            return [
+                'status' => 'transit',
+                'message' => 'Your parcel is currently in transit. Estimated arrival: ' . date('M j, Y \a\t g:i A', $arrival_time)
+            ];
+        case 'pending':
+            if ($current_time < $travel_date) {
+                $days_until = ceil(($travel_date - $current_time) / 86400);
+                return [
+                    'status' => 'scheduled',
+                    'message' => 'Your parcel is scheduled for delivery in ' . $days_until . ' day' . ($days_until != 1 ? 's' : '') . ' on ' . date('F j, Y', $travel_date) . '.'
+                ];
+            } else {
+                return [
+                    'status' => 'ready',
+                    'message' => 'Your parcel is ready for pickup at ' . $parcel['destination'] . ' bus station.'
+                ];
+            }
+        default:
+            return [
+                'status' => 'info',
+                'message' => 'Parcel status: ' . ucfirst($parcel['status'])
+            ];
     }
 }
 ?>
@@ -182,10 +302,10 @@ function getEstimatedDelivery($parcel) {
                     <li><a href="index.php">Home</a></li>
                     <li><a href="send_parcel.php">Send Parcel</a></li>
                     <?php if (isset($_SESSION['user_id'])): ?>
-                        <?php if ($_SESSION['user_type'] === 'passenger'): ?>
-                            <li><a href="passenger/dashboard.php">My Dashboard</a></li>
-                        <?php endif; ?>
                         <li><a href="my_parcels.php">My Parcels</a></li>
+                        <?php if ($_SESSION['user_type'] === 'passenger'): ?>
+                            <li><a href="passenger/dashboard.php">Dashboard</a></li>
+                        <?php endif; ?>
                         <li><a href="logout.php">Logout</a></li>
                     <?php else: ?>
                         <li><a href="login.php">Login</a></li>
@@ -264,7 +384,9 @@ function getEstimatedDelivery($parcel) {
                         <div>
                             <h4 style="color: #2c3e50; margin-bottom: 1rem;">Tracking Information</h4>
                             <p><strong>Tracking Number:</strong> 
-                                <code style="background: #f5f5f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 1.1rem;">
+                                <code style="background: #f5f5f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 1.1rem; cursor: pointer;" 
+                                      onclick="copyToClipboard('<?php echo htmlspecialchars($parcel_info['tracking_number']); ?>')" 
+                                      title="Click to copy">
                                     <?php echo htmlspecialchars($parcel_info['tracking_number']); ?>
                                 </code>
                             </p>
@@ -273,12 +395,12 @@ function getEstimatedDelivery($parcel) {
                                     <?php echo ucfirst($parcel_info['status']); ?>
                                 </span>
                             </p>
-                            <p><strong>Booking Date:</strong> <?php echo date('M j, Y g:i A', strtotime($parcel_info['created_at'])); ?></p>
-                            <p><strong>Delivery Date:</strong> <?php echo date('M j, Y', strtotime($parcel_info['travel_date'])); ?></p>
+                            <p><strong>Booking Date:</strong> <?php echo date('F j, Y \a\t g:i A', strtotime($parcel_info['created_at'])); ?></p>
+                            <p><strong>Travel Date:</strong> <?php echo date('F j, Y', strtotime($parcel_info['travel_date'])); ?></p>
                         </div>
                         
                         <div>
-                            <h4 style="color: #2c3e50; margin-bottom: 1rem;">Route Information</h4>
+                            <h4 style="color: #2c3e50; margin-bottom: 1rem;">Route Details</h4>
                             <p><strong>Route:</strong> <?php echo htmlspecialchars($parcel_info['route_name']); ?></p>
                             <p><strong>From:</strong> <?php echo htmlspecialchars($parcel_info['origin']); ?></p>
                             <p><strong>To:</strong> <?php echo htmlspecialchars($parcel_info['destination']); ?></p>
@@ -287,13 +409,57 @@ function getEstimatedDelivery($parcel) {
                                 <p><strong>Duration:</strong> <?php echo htmlspecialchars($parcel_info['estimated_duration']); ?></p>
                             <?php endif; ?>
                         </div>
-                        
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sender and Receiver Information -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem 0;">
+                
+                <!-- Sender Information -->
+                <div class="table_container">
+                    <h3 class="p_1 mb_1">📤 Sender Details</h3>
+                    <div class="p_2">
+                        <p><strong>Name:</strong> <?php echo htmlspecialchars($parcel_info['sender_name']); ?></p>
+                        <p><strong>Phone:</strong> <?php echo htmlspecialchars($parcel_info['sender_phone']); ?></p>
+                        <p><strong>Email:</strong> <?php echo htmlspecialchars($parcel_info['sender_email']); ?></p>
+                    </div>
+                </div>
+
+                <!-- Receiver Information -->
+                <div class="table_container">
+                    <h3 class="p_1 mb_1">📥 Receiver Details</h3>
+                    <div class="p_2">
+                        <p><strong>Name:</strong> <?php echo htmlspecialchars($parcel_info['receiver_name']); ?></p>
+                        <p><strong>Phone:</strong> <?php echo htmlspecialchars($parcel_info['receiver_phone']); ?></p>
+                        <p><strong>Address:</strong></p>
+                        <div style="background: #f8f9fa; padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem;">
+                            <?php echo nl2br(htmlspecialchars($parcel_info['receiver_address'])); ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parcel Specifications -->
+            <div class="table_container mb_2">
+                <h3 class="p_1 mb_1">📋 Parcel Specifications</h3>
+                <div class="p_2">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                         <div>
-                            <h4 style="color: #2c3e50; margin-bottom: 1rem;">Parcel Information</h4>
-                            <p><strong>Type:</strong> <?php echo htmlspecialchars($parcel_info['parcel_type']); ?></p>
-                            <p><strong>Weight:</strong> <?php echo $parcel_info['weight_kg']; ?> kg</p>
-                            <p><strong>Delivery Cost:</strong> LKR <?php echo number_format($parcel_info['delivery_cost']); ?></p>
-                            <p><strong>Insurance:</strong> Up to LKR 10,000</p>
+                            <strong>Type:</strong><br>
+                            <?php echo htmlspecialchars($parcel_info['parcel_type'] ?: 'General'); ?>
+                        </div>
+                        <div>
+                            <strong>Weight:</strong><br>
+                            <?php echo htmlspecialchars($parcel_info['weight_kg']); ?> kg
+                        </div>
+                        <div>
+                            <strong>Delivery Cost:</strong><br>
+                            LKR <?php echo number_format($parcel_info['delivery_cost'], 2); ?>
+                        </div>
+                        <div>
+                            <strong>Insurance:</strong><br>
+                            Up to LKR 10,000
                         </div>
                     </div>
                 </div>
@@ -308,24 +474,24 @@ function getEstimatedDelivery($parcel) {
                             <div style="display: flex; align-items: flex-start; margin-bottom: 2rem; position: relative;">
                                 <!-- Timeline line -->
                                 <?php if ($index < count($tracking_history) - 1): ?>
-                                    <div style="position: absolute; left: 20px; top: 50px; width: 2px; height: 2rem; background: <?php echo $event['completed'] ? '#27ae60' : '#ddd'; ?>;"></div>
+                                    <div style="position: absolute; left: 20px; top: 50px; width: 2px; height: 2rem; background: <?php echo $event['completed'] ? '#27ae60' : '#e0e0e0'; ?>;"></div>
                                 <?php endif; ?>
                                 
-                                <!-- Icon -->
-                                <div style="width: 40px; height: 40px; border-radius: 50%; background: <?php echo $event['completed'] ? '#27ae60' : '#ddd'; ?>; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; margin-right: 1rem; flex-shrink: 0;">
-                                    <?php echo $event['completed'] ? '✓' : $event['icon']; ?>
+                                <!-- Timeline marker -->
+                                <div style="width: 40px; height: 40px; border-radius: 50%; background: <?php echo $event['completed'] ? '#27ae60' : '#e0e0e0'; ?>; display: flex; align-items: center; justify-content: center; margin-right: 1rem; flex-shrink: 0; color: white; font-size: 1.2rem;">
+                                    <?php echo $event['icon']; ?>
                                 </div>
                                 
-                                <!-- Content -->
+                                <!-- Timeline content -->
                                 <div style="flex: 1;">
-                                    <h4 style="margin-bottom: 0.5rem; color: <?php echo $event['completed'] ? '#27ae60' : '#666'; ?>;">
-                                        <?php echo $event['status']; ?>
+                                    <h4 style="margin-bottom: 0.5rem; color: <?php echo $event['completed'] ? '#27ae60' : '#95a5a6'; ?>;">
+                                        <?php echo htmlspecialchars($event['status']); ?>
                                     </h4>
                                     <p style="margin-bottom: 0.5rem; color: #666;">
-                                        <?php echo $event['description']; ?>
+                                        <?php echo htmlspecialchars($event['description']); ?>
                                     </p>
-                                    <small style="color: #999;">
-                                        <?php echo $event['timestamp']; ?>
+                                    <small style="color: #888; font-style: italic;">
+                                        <?php echo htmlspecialchars($event['timestamp']); ?>
                                     </small>
                                 </div>
                             </div>
@@ -334,74 +500,77 @@ function getEstimatedDelivery($parcel) {
                 </div>
             </div>
 
-            <!-- Contact Information -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem 0;">
-                
-                <!-- Sender Information -->
-                <div class="table_container">
-                    <h3 class="p_1 mb_1">📤 Sender Details</h3>
-                    <div class="p_2">
-                        <p><strong>Name:</strong> <?php echo htmlspecialchars($parcel_info['sender_name']); ?></p>
-                        <p><strong>Phone:</strong> <?php echo htmlspecialchars($parcel_info['sender_phone']); ?></p>
-                    </div>
-                </div>
-
-                <!-- Receiver Information -->
-                <div class="table_container">
-                    <h3 class="p_1 mb_1">📥 Receiver Details</h3>
-                    <div class="p_2">
-                        <p><strong>Name:</strong> <?php echo htmlspecialchars($parcel_info['receiver_name']); ?></p>
-                        <p><strong>Phone:</strong> <?php echo htmlspecialchars($parcel_info['receiver_phone']); ?></p>
-                        <p><strong>Address:</strong></p>
-                        <div style="background: #f8f9fa; padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem; font-size: 0.9rem;">
-                            <?php echo nl2br(htmlspecialchars($parcel_info['receiver_address'])); ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Action Buttons -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0;">
-                <button onclick="window.print()" class="btn btn_primary" style="text-align: center;">
+                <a href="?tracking=<?php echo urlencode($parcel_info['tracking_number']); ?>&download=receipt" 
+                   class="btn btn_primary" style="text-align: center;">
+                    📄 Download Receipt
+                </a>
+                <button onclick="window.print()" class="btn btn_success" style="text-align: center;">
                     🖨️ Print Details
                 </button>
-                <button onclick="shareTracking()" class="btn btn_success" style="text-align: center;">
-                    📤 Share Tracking
-                </button>
+                <a href="send_parcel.php" class="btn" style="text-align: center; background: #34495e;">
+                    📦 Send Another Parcel
+                </a>
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    <a href="my_parcels.php" class="btn" style="text-align: center; background: #34495e;">
+                    <a href="my_parcels.php" class="btn" style="text-align: center; background: #7f8c8d;">
                         📋 My Parcels
                     </a>
                 <?php endif; ?>
-                <a href="send_parcel.php" class="btn" style="text-align: center; background: #7f8c8d;">
-                    📦 Send New Parcel
-                </a>
+            </div>
+
+            <!-- Support Information -->
+            <div class="alert alert_info">
+                <h4>📞 Need Help?</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <div>
+                        <strong>📱 Customer Support:</strong><br>
+                        Call +94 11 123 4567 for immediate assistance with your parcel delivery.
+                    </div>
+                    <div>
+                        <strong>✉️ Email Support:</strong><br>
+                        Send queries to parcels@roadrunner.lk for detailed support.
+                    </div>
+                    <div>
+                        <strong>🌐 Online Help:</strong><br>
+                        Visit www.roadrunner.lk/help for FAQs and troubleshooting guides.
+                    </div>
+                    <div>
+                        <strong>⏰ Business Hours:</strong><br>
+                        Mon-Fri: 8AM-6PM, Sat: 8AM-4PM, Sun: 9AM-2PM
+                    </div>
+                </div>
             </div>
 
         <?php endif; ?>
 
-        <!-- Help Section -->
-        <div class="alert alert_info mt_2">
-            <h4>💡 Tracking Help</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                <div>
-                    <strong>📱 Real-time Updates:</strong><br>
-                    Track your parcel status 24/7 with automatic SMS notifications to sender and receiver.
+        <!-- General Information (shown when no tracking) -->
+        <?php if (!$parcel_info && empty($error)): ?>
+            <div class="features_grid">
+                <div class="feature_card">
+                    <h4>📦 Track Any Parcel</h4>
+                    <p>Enter any valid Road Runner tracking number to see real-time delivery status and timeline.</p>
                 </div>
-                <div>
-                    <strong>📍 Pickup Instructions:</strong><br>
-                    Receiver will be notified when parcel arrives. Pickup from destination bus station within 24 hours.
+                <div class="feature_card">
+                    <h4>📱 Real-time Updates</h4>
+                    <p>Get live updates on your parcel's journey from pickup to final delivery.</p>
                 </div>
-                <div>
-                    <strong>📞 Customer Support:</strong><br>
-                    Need help? Call +94 11 123 4567 or email parcels@roadrunner.lk for assistance.
-                </div>
-                <div>
-                    <strong>🔍 Track Anytime:</strong><br>
-                    No login required. Track any parcel using just the tracking number from anywhere.
+                <div class="feature_card">
+                    <h4>📄 Download Receipts</h4>
+                    <p>Access and download detailed delivery receipts for your records and proof of service.</p>
                 </div>
             </div>
-        </div>
+
+            <div class="alert alert_info mt_2">
+                <h4>📋 How to Track Your Parcel</h4>
+                <div style="margin-top: 1rem;">
+                    <p><strong>1. Find Your Tracking Number:</strong> Look for the tracking number in your booking confirmation or receipt</p>
+                    <p><strong>2. Enter Tracking Number:</strong> Type or paste the tracking number in the field above</p>
+                    <p><strong>3. View Details:</strong> See real-time status, timeline, and delivery information</p>
+                    <p><strong>4. Download Receipt:</strong> Get a detailed receipt for your records</p>
+                </div>
+            </div>
+        <?php endif; ?>
     </main>
 
     <!-- Footer -->
@@ -412,41 +581,109 @@ function getEstimatedDelivery($parcel) {
     </footer>
 
     <script>
-        function shareTracking() {
-            const trackingNumber = '<?php echo htmlspecialchars($tracking_number); ?>';
-            const url = window.location.origin + window.location.pathname + '?tracking=' + encodeURIComponent(trackingNumber);
-            
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Road Runner Parcel Tracking',
-                    text: 'Track parcel: ' + trackingNumber,
-                    url: url
-                }).catch(console.error);
-            } else {
-                // Fallback for browsers without Web Share API
-                if (navigator.clipboard) {
-                    navigator.clipboard.writeText(url).then(function() {
-                        alert('Tracking link copied to clipboard!');
-                    });
-                } else {
-                    prompt('Copy this tracking link:', url);
-                }
-            }
+        // Copy tracking number to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                alert('Tracking number copied to clipboard!');
+            }).catch(function(err) {
+                console.error('Could not copy text: ', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('Tracking number copied to clipboard!');
+            });
         }
-        
-        // Auto-focus tracking input when page loads
+
+        // Auto-focus tracking number input if no parcel info is displayed
         document.addEventListener('DOMContentLoaded', function() {
             const trackingInput = document.getElementById('tracking_number');
-            if (trackingInput && !trackingInput.value) {
+            const hasParcelInfo = <?php echo $parcel_info ? 'true' : 'false'; ?>;
+            
+            if (!hasParcelInfo && trackingInput) {
                 trackingInput.focus();
             }
         });
-        
-        // Format tracking number input (optional enhancement)
-        document.getElementById('tracking_number').addEventListener('input', function(e) {
-            // Remove spaces and convert to uppercase for consistency
-            this.value = this.value.replace(/\s/g, '').toUpperCase();
+
+        // Copy tracking number to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                alert('Tracking number copied to clipboard!');
+            }).catch(function(err) {
+                console.error('Could not copy text: ', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('Tracking number copied to clipboard!');
+            });
+        }
+
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const trackingNumber = document.getElementById('tracking_number').value.trim();
+            if (!trackingNumber) {
+                e.preventDefault();
+                alert('Please enter a tracking number to track your parcel.');
+                return false;
+            }
+            
+            // Basic tracking number format validation (optional)
+            if (trackingNumber.length < 8) {
+                e.preventDefault();
+                alert('Please enter a valid tracking number. Tracking numbers are usually 8 or more characters long.');
+                return false;
+            }
+        });
+
+        // Print functionality enhancement
+        window.addEventListener('beforeprint', function() {
+            document.body.classList.add('printing');
+        });
+
+        window.addEventListener('afterprint', function() {
+            document.body.classList.remove('printing');
         });
     </script>
+
+    <style>
+        /* Print styles */
+        @media print {
+            .header, .footer, .btn, button, .alert:not(.alert_success):not(.alert_info) {
+                display: none !important;
+            }
+            
+            .container {
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .table_container {
+                border: 1px solid #333 !important;
+                margin-bottom: 1rem !important;
+                page-break-inside: avoid;
+            }
+            
+            .timeline-item {
+                page-break-inside: avoid;
+            }
+            
+            body {
+                font-size: 12pt !important;
+                line-height: 1.4 !important;
+            }
+            
+            h2, h3, h4 {
+                color: #000 !important;
+            }
+        }
+    </style>
 </body>
 </html>
