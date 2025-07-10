@@ -199,9 +199,7 @@ function getActivityIcon($category) {
                 <a href="dashboard.php">Dashboard</a>
                 <a href="buses.php">My Buses</a>
                 <a href="schedules.php">Routes & Schedules</a>
-                <a href="#" onclick="alert('Coming soon!')">Bookings</a>
-                <a href="#" onclick="alert('Coming soon!')">Revenue Reports</a>
-                <a href="#" onclick="alert('Coming soon!')">Profile Settings</a>
+                <a href="parcels.php">Parcel Management</a>
             </div>
         </div>
     </div>

@@ -46,10 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Redirect based on user type
                 switch ($user['user_type']) {
                     case 'admin':
-                        header('Location: admin/dashboard.php');
+                        header('Location: index.php');
                         break;
                     case 'operator':
-                        header('Location: operator/dashboard.php');
+                        header('Location: index.php');
                         break;
                     case 'passenger':
                     default:

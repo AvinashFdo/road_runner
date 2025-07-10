@@ -32,9 +32,10 @@ $user_type = $is_logged_in ? $_SESSION['user_type'] : '';
                             <li><a href="operator/dashboard.php">Operator Panel</a></li>
                         <?php elseif ($user_type === 'passenger'): ?>
                             <li><a href="passenger/dashboard.php">My Dashboard</a></li>
+                            <li><a href="search_buses.php">Search Buses</a></li>
+                            <li><a href="my_bookings.php">My Bookings</a></li>
+                            <li><a href="my_parcels.php">My Parcels</a></li>
                         <?php endif; ?>
-                        <li><a href="search_buses.php">Search Buses</a></li>
-                        <li><a href="my_bookings.php">My Bookings</a></li>
                         <li><a href="logout.php">Logout</a></li>
                     <?php else: ?>
                         <li><a href="login.php">Login</a></li>
