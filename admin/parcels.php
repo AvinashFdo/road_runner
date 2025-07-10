@@ -1,5 +1,5 @@
 <?php
-// Admin Parcel Management System
+// Admin Parcel Management System - CORRECTED VERSION
 // Save this as: admin/parcels.php
 
 session_start();
@@ -14,6 +14,44 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
 $admin_id = $_SESSION['user_id'];
 $message = '';
 $error = '';
+
+// FIXED: Function to handle parcel status display
+function getParcelStatusDisplay($status) {
+    // Handle empty/null status as cancelled
+    $trimmed_status = trim($status ?? '');
+    if (empty($trimmed_status)) {
+        $trimmed_status = 'cancelled';
+    }
+    
+    switch ($trimmed_status) {
+        case 'delivered':
+            return [
+                'class' => 'badge_active',
+                'text' => 'Delivered',
+                'icon' => '✅'
+            ];
+        case 'cancelled':
+        case 'refunded':
+            return [
+                'class' => 'badge_inactive',
+                'text' => 'Cancelled',
+                'icon' => '❌'
+            ];
+        case 'in_transit':
+            return [
+                'class' => 'badge_operator',
+                'text' => 'In Transit',
+                'icon' => '🚌'
+            ];
+        case 'pending':
+        default:
+            return [
+                'class' => 'badge_passenger',
+                'text' => 'Pending',
+                'icon' => '⏳'
+            ];
+    }
+}
 
 // Handle admin actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -36,37 +74,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $parcel_id = $_POST['parcel_id'] ?? '';
         
         try {
-            // Only allow deletion of cancelled parcels
+            // FIXED: Allow deletion of cancelled parcels (including empty status)
             $stmt = $pdo->prepare("SELECT status FROM parcels WHERE parcel_id = ?");
             $stmt->execute([$parcel_id]);
             $parcel = $stmt->fetch();
             
-            if ($parcel && $parcel['status'] === 'cancelled') {
-                $stmt = $pdo->prepare("DELETE FROM parcels WHERE parcel_id = ?");
-                $stmt->execute([$parcel_id]);
-                $message = "Cancelled parcel deleted successfully.";
+            if ($parcel) {
+                $status = trim($parcel['status'] ?? '');
+                if (empty($status) || $status === 'cancelled' || $status === 'refunded') {
+                    $stmt = $pdo->prepare("DELETE FROM parcels WHERE parcel_id = ?");
+                    $stmt->execute([$parcel_id]);
+                    $message = "Cancelled parcel deleted successfully.";
+                } else {
+                    $error = "Only cancelled parcels can be deleted.";
+                }
             } else {
-                $error = "Only cancelled parcels can be deleted.";
+                $error = "Parcel not found.";
             }
         } catch (PDOException $e) {
             $error = "Error deleting parcel: " . $e->getMessage();
-        }
-    }
-    
-    elseif ($action === 'bulk_status_update') {
-        $parcel_ids = $_POST['parcel_ids'] ?? [];
-        $bulk_status = $_POST['bulk_status'] ?? '';
-        
-        if (!empty($parcel_ids) && !empty($bulk_status)) {
-            try {
-                $placeholders = str_repeat('?,', count($parcel_ids) - 1) . '?';
-                $stmt = $pdo->prepare("UPDATE parcels SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE parcel_id IN ($placeholders)");
-                $params = array_merge([$bulk_status], $parcel_ids);
-                $stmt->execute($params);
-                $message = count($parcel_ids) . " parcel(s) updated to " . ucfirst($bulk_status) . ".";
-            } catch (PDOException $e) {
-                $error = "Error updating parcels: " . $e->getMessage();
-            }
         }
     }
 }
@@ -78,42 +104,40 @@ $filter_route = $_GET['route'] ?? 'all';
 $filter_operator = $_GET['operator'] ?? 'all';
 $search = $_GET['search'] ?? '';
 
-// Get all routes for filter
 try {
-    $stmt = $pdo->query("SELECT route_id, route_name, origin, destination FROM routes WHERE status = 'active' ORDER BY route_name ASC");
-    $all_routes = $stmt->fetchAll();
-} catch (PDOException $e) {
-    $all_routes = [];
-}
-
-// Get all operators for filter
-try {
-    $stmt = $pdo->query("SELECT DISTINCT u.user_id, u.full_name FROM users u JOIN buses b ON u.user_id = b.operator_id WHERE u.user_type = 'operator' ORDER BY u.full_name ASC");
-    $all_operators = $stmt->fetchAll();
-} catch (PDOException $e) {
-    $all_operators = [];
-}
-
-// Build comprehensive parcel query
-try {
-    $where_conditions = ["1=1"];
+    // Build dynamic WHERE clause based on filters
+    $where_conditions = ["1=1"]; // Always true base condition
     $params = [];
     
     // Date filter
     if ($filter_date !== 'all') {
-        $where_conditions[] = "p.travel_date = ?";
-        $params[] = $filter_date;
+        switch ($filter_date) {
+            case 'today':
+                $where_conditions[] = "DATE(p.travel_date) = CURDATE()";
+                break;
+            case 'this_week':
+                $where_conditions[] = "WEEK(p.travel_date) = WEEK(CURDATE()) AND YEAR(p.travel_date) = YEAR(CURDATE())";
+                break;
+            case 'this_month':
+                $where_conditions[] = "MONTH(p.travel_date) = MONTH(CURDATE()) AND YEAR(p.travel_date) = YEAR(CURDATE())";
+                break;
+        }
     }
     
     // Status filter
     if ($filter_status !== 'all') {
-        $where_conditions[] = "p.status = ?";
-        $params[] = $filter_status;
+        if ($filter_status === 'cancelled') {
+            // FIXED: Include empty/null status as cancelled
+            $where_conditions[] = "(p.status IS NULL OR p.status = '' OR p.status = 'cancelled' OR p.status = 'refunded')";
+        } else {
+            $where_conditions[] = "p.status = ?";
+            $params[] = $filter_status;
+        }
     }
     
     // Route filter
     if ($filter_route !== 'all') {
-        $where_conditions[] = "r.route_id = ?";
+        $where_conditions[] = "p.route_id = ?";
         $params[] = $filter_route;
     }
     
@@ -153,12 +177,15 @@ try {
     $stmt->execute($params);
     $parcels = $stmt->fetchAll();
     
-    // Calculate statistics
+    // FIXED: Calculate statistics with proper cancelled counting
     $total_parcels = count($parcels);
-    $pending_count = count(array_filter($parcels, fn($p) => $p['status'] === 'pending'));
+    $pending_count = count(array_filter($parcels, fn($p) => trim($p['status'] ?? '') === 'pending'));
     $in_transit_count = count(array_filter($parcels, fn($p) => $p['status'] === 'in_transit'));
     $delivered_count = count(array_filter($parcels, fn($p) => $p['status'] === 'delivered'));
-    $cancelled_count = count(array_filter($parcels, fn($p) => $p['status'] === 'cancelled'));
+    $cancelled_count = count(array_filter($parcels, function($p) {
+        $status = trim($p['status'] ?? '');
+        return empty($status) || $status === 'cancelled' || $status === 'refunded';
+    }));
     $total_revenue = array_sum(array_column($parcels, 'delivery_cost'));
     
     // Get system statistics
@@ -169,15 +196,34 @@ try {
             COUNT(DISTINCT sender_id) as unique_senders,
             COUNT(DISTINCT route_id) as routes_used
         FROM parcels 
-        WHERE status != 'cancelled'
+        WHERE status != 'cancelled' AND status IS NOT NULL AND status != ''
     ");
     $system_stats = $stmt->fetch();
+    
+    // Get available routes for filter
+    $stmt = $pdo->query("SELECT DISTINCT r.route_id, r.route_name FROM routes r JOIN parcels p ON r.route_id = p.route_id ORDER BY r.route_name");
+    $available_routes = $stmt->fetchAll();
+    
+    // Get available operators for filter
+    $stmt = $pdo->query("
+        SELECT DISTINCT op.user_id, op.full_name 
+        FROM users op 
+        JOIN buses b ON op.user_id = b.operator_id 
+        JOIN schedules s ON b.bus_id = s.bus_id 
+        JOIN routes r ON s.route_id = r.route_id 
+        JOIN parcels p ON r.route_id = p.route_id 
+        WHERE op.user_type = 'operator'
+        ORDER BY op.full_name
+    ");
+    $available_operators = $stmt->fetchAll();
     
 } catch (PDOException $e) {
     $error = "Error loading parcels: " . $e->getMessage();
     $parcels = [];
     $total_parcels = $pending_count = $in_transit_count = $delivered_count = $cancelled_count = $total_revenue = 0;
     $system_stats = ['total_system_parcels' => 0, 'total_system_revenue' => 0, 'unique_senders' => 0, 'routes_used' => 0];
+    $available_routes = [];
+    $available_operators = [];
 }
 ?>
 
@@ -193,7 +239,6 @@ try {
         .parcel-header { display: flex; justify-content: between; align-items: center; margin-bottom: 1rem; }
         .parcel-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
         .status-update-form { display: inline-block; margin-right: 0.5rem; }
-        .bulk-actions { background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
     </style>
 </head>
 <body>
@@ -282,170 +327,101 @@ try {
             </div>
         </div>
 
-        <!-- Filters and Search -->
-        <div class="form_container mb_2">
-            <h3>🔍 Filter & Search Parcels</h3>
-            <form method="GET" action="parcels.php">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                    <div class="form_group">
-                        <label for="search">Search:</label>
-                        <input 
-                            type="text" 
-                            id="search" 
-                            name="search" 
-                            class="form_control" 
-                            value="<?php echo htmlspecialchars($search); ?>"
-                            placeholder="Tracking, name, phone..."
-                        >
-                    </div>
-                    
-                    <div class="form_group">
-                        <label for="date">Travel Date:</label>
-                        <select id="date" name="date" class="form_control">
-                            <option value="all" <?php echo $filter_date === 'all' ? 'selected' : ''; ?>>All Dates</option>
-                            <option value="<?php echo date('Y-m-d'); ?>" <?php echo $filter_date === date('Y-m-d') ? 'selected' : ''; ?>>Today</option>
-                            <option value="<?php echo date('Y-m-d', strtotime('+1 day')); ?>" <?php echo $filter_date === date('Y-m-d', strtotime('+1 day')) ? 'selected' : ''; ?>>Tomorrow</option>
-                            <option value="<?php echo date('Y-m-d', strtotime('-1 day')); ?>" <?php echo $filter_date === date('Y-m-d', strtotime('-1 day')) ? 'selected' : ''; ?>>Yesterday</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form_group">
-                        <label for="status">Status:</label>
-                        <select id="status" name="status" class="form_control">
-                            <option value="all" <?php echo $filter_status === 'all' ? 'selected' : ''; ?>>All Statuses</option>
-                            <option value="pending" <?php echo $filter_status === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                            <option value="in_transit" <?php echo $filter_status === 'in_transit' ? 'selected' : ''; ?>>In Transit</option>
-                            <option value="delivered" <?php echo $filter_status === 'delivered' ? 'selected' : ''; ?>>Delivered</option>
-                            <option value="cancelled" <?php echo $filter_status === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form_group">
-                        <label for="route">Route:</label>
-                        <select id="route" name="route" class="form_control">
-                            <option value="all" <?php echo $filter_route === 'all' ? 'selected' : ''; ?>>All Routes</option>
-                            <?php foreach ($all_routes as $route): ?>
-                                <option value="<?php echo $route['route_id']; ?>" <?php echo $filter_route == $route['route_id'] ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($route['route_name']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
-                    <div class="form_group">
-                        <label for="operator">Operator:</label>
-                        <select id="operator" name="operator" class="form_control">
-                            <option value="all" <?php echo $filter_operator === 'all' ? 'selected' : ''; ?>>All Operators</option>
-                            <?php foreach ($all_operators as $operator): ?>
-                                <option value="<?php echo $operator['user_id']; ?>" <?php echo $filter_operator == $operator['user_id'] ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($operator['full_name']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 1rem;">
-                    <button type="submit" class="btn btn_primary">🔍 Filter</button>
-                    <a href="parcels.php" class="btn">Clear All</a>
-                </div>
-            </form>
-        </div>
-
-        <!-- Bulk Actions -->
-        <?php if (!empty($parcels)): ?>
-        <div class="bulk-actions">
-            <h4>📋 Bulk Actions</h4>
-            <form method="POST" id="bulk-form">
-                <input type="hidden" name="action" value="bulk_status_update">
-                <div style="display: flex; gap: 1rem; align-items: end;">
-                    <div class="form_group">
-                        <label>Selected Parcels:</label>
-                        <div style="background: #e9ecef; padding: 0.5rem; border-radius: 4px; min-height: 2rem;">
-                            <span id="selected-count">0 selected</span>
+        <!-- Filters -->
+        <div class="table_container mb_2">
+            <h3 class="p_1">🔍 Filter Parcels</h3>
+            <div class="p_2">
+                <form method="GET" action="parcels.php">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: end;">
+                        <div class="form_group">
+                            <label for="date">Date Filter:</label>
+                            <select name="date" id="date" class="form_control">
+                                <option value="all" <?php echo $filter_date === 'all' ? 'selected' : ''; ?>>All Dates</option>
+                                <option value="today" <?php echo $filter_date === 'today' ? 'selected' : ''; ?>>Today</option>
+                                <option value="this_week" <?php echo $filter_date === 'this_week' ? 'selected' : ''; ?>>This Week</option>
+                                <option value="this_month" <?php echo $filter_date === 'this_month' ? 'selected' : ''; ?>>This Month</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form_group">
+                            <label for="status">Status Filter:</label>
+                            <select name="status" id="status" class="form_control">
+                                <option value="all" <?php echo $filter_status === 'all' ? 'selected' : ''; ?>>All Statuses</option>
+                                <option value="pending" <?php echo $filter_status === 'pending' ? 'selected' : ''; ?>>Pending</option>
+                                <option value="in_transit" <?php echo $filter_status === 'in_transit' ? 'selected' : ''; ?>>In Transit</option>
+                                <option value="delivered" <?php echo $filter_status === 'delivered' ? 'selected' : ''; ?>>Delivered</option>
+                                <option value="cancelled" <?php echo $filter_status === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form_group">
+                            <label for="route">Route Filter:</label>
+                            <select name="route" id="route" class="form_control">
+                                <option value="all">All Routes</option>
+                                <?php foreach ($available_routes as $route): ?>
+                                    <option value="<?php echo $route['route_id']; ?>" <?php echo $filter_route == $route['route_id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($route['route_name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="form_group">
+                            <label for="search">Search:</label>
+                            <input type="text" name="search" id="search" class="form_control" 
+                                   placeholder="Tracking number, name, phone..." value="<?php echo htmlspecialchars($search); ?>">
+                        </div>
+                        
+                        <div class="form_group">
+                            <label>&nbsp;</label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button type="submit" class="btn btn_primary" style="flex: 1;">Apply Filters</button>
+                                <a href="parcels.php" class="btn" style="background: #6c757d; color: white; text-decoration: none; flex: 1; text-align: center; display: flex; align-items: center; justify-content: center;">Clear</a>
+                            </div>
                         </div>
                     </div>
-                    <div class="form_group">
-                        <label for="bulk_status">Update Status To:</label>
-                        <select name="bulk_status" id="bulk_status" class="form_control">
-                            <option value="">Choose status...</option>
-                            <option value="pending">Pending</option>
-                            <option value="in_transit">In Transit</option>
-                            <option value="delivered">Delivered</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn_primary" onclick="return confirmBulkUpdate()">Update Selected</button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
-        <?php endif; ?>
 
-        <!-- Parcels List -->
+        <!-- Parcels Table -->
         <div class="table_container">
-            <h3 class="p_1 mb_1">
-                All Parcels (<?php echo $total_parcels; ?> found)
-                <?php if ($total_revenue > 0): ?>
-                    <small style="font-weight: normal; color: #666;">
-                        - Total Value: LKR <?php echo number_format($total_revenue); ?>
-                    </small>
-                <?php endif; ?>
-            </h3>
-            
+            <h3 class="p_1 mb_1">📦 Parcels (Showing <?php echo count($parcels); ?> of <?php echo $total_parcels; ?>)</h3>
             <?php if (empty($parcels)): ?>
-                <div class="p_2 text_center">
-                    <h4>No parcels found</h4>
-                    <p>No parcels match your current filters. Try adjusting the search criteria.</p>
-                    <a href="parcels.php" class="btn btn_primary mt_1">View All Parcels</a>
+                <div class="p_2">
+                    <div class="alert alert_info">
+                        <p>No parcels found matching your criteria.</p>
+                        <p><a href="parcels.php" class="btn btn_primary">View All Parcels</a></p>
+                    </div>
                 </div>
             <?php else: ?>
                 <div style="overflow-x: auto;">
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>
-                                    <input type="checkbox" id="select-all" onchange="toggleAllCheckboxes()"> Select
-                                </th>
-                                <th>Tracking & Date</th>
-                                <th>Sender</th>
-                                <th>Receiver</th>
-                                <th>Route & Operator</th>
+                                <th>Parcel Info</th>
+                                <th>Route & Schedule</th>
                                 <th>Parcel Details</th>
                                 <th>Status</th>
-                                <th>Admin Actions</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($parcels as $parcel): ?>
                                 <tr>
                                     <td>
-                                        <input type="checkbox" name="parcel_ids[]" value="<?php echo $parcel['parcel_id']; ?>" class="parcel-checkbox" onchange="updateSelectedCount()">
-                                    </td>
-                                    <td>
                                         <strong><?php echo htmlspecialchars($parcel['tracking_number']); ?></strong><br>
                                         <small style="color: #666;">
-                                            Travel: <?php echo date('M j, Y', strtotime($parcel['travel_date'])); ?><br>
+                                            Sender: <?php echo htmlspecialchars($parcel['sender_name']); ?><br>
+                                            Phone: <?php echo htmlspecialchars($parcel['sender_phone']); ?><br>
                                             Booked: <?php echo date('M j, g:i A', strtotime($parcel['created_at'])); ?>
-                                        </small>
-                                    </td>
-                                    <td>
-                                        <strong><?php echo htmlspecialchars($parcel['sender_name']); ?></strong><br>
-                                        <small style="color: #666;">
-                                            <?php echo htmlspecialchars($parcel['sender_phone']); ?><br>
-                                            <?php echo htmlspecialchars($parcel['sender_email']); ?>
-                                        </small>
-                                    </td>
-                                    <td>
-                                        <strong><?php echo htmlspecialchars($parcel['receiver_name']); ?></strong><br>
-                                        <small style="color: #666;">
-                                            <?php echo htmlspecialchars($parcel['receiver_phone']); ?><br>
-                                            <?php echo htmlspecialchars(substr($parcel['receiver_address'], 0, 30)); ?>...
                                         </small>
                                     </td>
                                     <td>
                                         <strong><?php echo htmlspecialchars($parcel['route_name']); ?></strong><br>
                                         <small style="color: #666;">
                                             <?php echo htmlspecialchars($parcel['origin']); ?> → <?php echo htmlspecialchars($parcel['destination']); ?><br>
+                                            Travel: <?php echo date('M j, Y', strtotime($parcel['travel_date'])); ?><br>
                                             <?php if ($parcel['operator_name']): ?>
                                                 Operator: <?php echo htmlspecialchars($parcel['operator_name']); ?>
                                             <?php else: ?>
@@ -454,19 +430,18 @@ try {
                                         </small>
                                     </td>
                                     <td>
-                                        <strong><?php echo htmlspecialchars($parcel['parcel_type']); ?></strong><br>
+                                        <strong>To: <?php echo htmlspecialchars($parcel['receiver_name']); ?></strong><br>
                                         <small style="color: #666;">
-                                            Weight: <?php echo $parcel['weight_kg']; ?> kg<br>
-                                            Distance: <?php echo $parcel['distance_km']; ?> km
+                                            Phone: <?php echo htmlspecialchars($parcel['receiver_phone']); ?><br>
+                                            Type: <?php echo htmlspecialchars($parcel['parcel_type'] ?: 'General'); ?><br>
+                                            Weight: <?php echo $parcel['weight_kg']; ?> kg
                                         </small><br>
                                         <strong style="color: #e74c3c;">LKR <?php echo number_format($parcel['delivery_cost']); ?></strong>
                                     </td>
                                     <td>
-                                        <span class="badge badge_<?php 
-                                            echo $parcel['status'] === 'delivered' ? 'active' : 
-                                                ($parcel['status'] === 'cancelled' ? 'inactive' : 'operator'); 
-                                        ?>">
-                                            <?php echo ucfirst(str_replace('_', ' ', $parcel['status'])); ?>
+                                        <?php $status_info = getParcelStatusDisplay($parcel['status']); ?>
+                                        <span class="badge <?php echo $status_info['class']; ?>">
+                                            <?php echo $status_info['icon']; ?> <?php echo $status_info['text']; ?>
                                         </span>
                                         <br><small style="color: #666;">
                                             Updated: <?php echo date('M j, g:i A', strtotime($parcel['updated_at'])); ?>
@@ -480,10 +455,10 @@ try {
                                                 <input type="hidden" name="parcel_id" value="<?php echo $parcel['parcel_id']; ?>">
                                                 <select name="new_status" class="form_control" style="font-size: 0.8rem; padding: 0.25rem;" onchange="confirmStatusUpdate(this)">
                                                     <option value="">Change Status</option>
-                                                    <option value="pending">Pending</option>
-                                                    <option value="in_transit">In Transit</option>
-                                                    <option value="delivered">Delivered</option>
-                                                    <option value="cancelled">Cancelled</option>
+                                                    <option value="pending" <?php echo (trim($parcel['status'] ?? '') === 'pending') ? 'selected' : ''; ?>>Pending</option>
+                                                    <option value="in_transit" <?php echo ($parcel['status'] === 'in_transit') ? 'selected' : ''; ?>>In Transit</option>
+                                                    <option value="delivered" <?php echo ($parcel['status'] === 'delivered') ? 'selected' : ''; ?>>Delivered</option>
+                                                    <option value="cancelled" <?php echo (empty(trim($parcel['status'] ?? '')) || $parcel['status'] === 'cancelled') ? 'selected' : ''; ?>>Cancelled</option>
                                                 </select>
                                             </form>
                                             
@@ -496,14 +471,17 @@ try {
                                                     Track
                                                 </a>
                                                 
-                                                <?php if ($parcel['status'] === 'cancelled'): ?>
+                                                <?php 
+                                                $status = trim($parcel['status'] ?? '');
+                                                if (empty($status) || $status === 'cancelled' || $status === 'refunded'): 
+                                                ?>
                                                     <form method="POST" style="display: inline;">
                                                         <input type="hidden" name="action" value="delete_parcel">
                                                         <input type="hidden" name="parcel_id" value="<?php echo $parcel['parcel_id']; ?>">
                                                         <button type="submit" 
                                                                 class="btn" 
                                                                 style="background: #dc3545; font-size: 0.7rem; padding: 0.2rem 0.4rem;"
-                                                                onclick="return confirm('Permanently delete this cancelled parcel?')">
+                                                                onclick="return confirm('Permanently delete this cancelled parcel? This action cannot be undone.')">
                                                             Delete
                                                         </button>
                                                     </form>
@@ -519,38 +497,21 @@ try {
             <?php endif; ?>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="features_grid mt_2">
-            <div class="feature_card">
-                <h4>📊 System Analytics</h4>
-                <p>View detailed reports and analytics about the parcel delivery system performance.</p>
-                <button class="btn btn_primary" onclick="alert('Analytics feature coming soon!')">View Analytics</button>
-            </div>
-            
-            <div class="feature_card">
-                <h4>🔧 System Settings</h4>
-                <p>Configure parcel delivery settings, pricing rules, and system parameters.</p>
-                <button class="btn btn_success" onclick="alert('Settings feature coming soon!')">Manage Settings</button>
-            </div>
-            
-            <div class="feature_card">
-                <h4>📞 Support Tools</h4>
-                <p>Access customer support tools and parcel dispute resolution features.</p>
-                <button class="btn btn_success" onclick="alert('Support tools coming soon!')">Support Tools</button>
-            </div>
-        </div>
-
-        <!-- Admin Guidelines -->
+        <!-- Admin Guide -->
         <div class="alert alert_info mt_2">
-            <h4>👑 Admin Parcel Management Guidelines</h4>
+            <h4>📚 Admin Guide - Parcel Management</h4>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
                 <div>
-                    <strong>🔍 Monitor System Health:</strong><br>
-                    Regularly check for stuck parcels, delayed deliveries, and system anomalies.
+                    <strong>📊 Monitor Status:</strong><br>
+                    Track parcel progress from pending through in-transit to delivered status.
                 </div>
                 <div>
-                    <strong>🚨 Handle Disputes:</strong><br>
-                    Resolve customer complaints, missing parcels, and delivery issues promptly.
+                    <strong>🔄 Update Status:</strong><br>
+                    Use dropdown menus to change individual parcel status or bulk update multiple parcels.
+                </div>
+                <div>
+                    <strong>🗑️ Clean Up:</strong><br>
+                    Delete cancelled parcels to maintain system cleanliness (only cancelled parcels can be deleted).
                 </div>
                 <div>
                     <strong>📊 Track Performance:</strong><br>
@@ -572,106 +533,59 @@ try {
     </footer>
 
     <script>
-        // Bulk selection functionality
-        function toggleAllCheckboxes() {
-            const selectAll = document.getElementById('select-all');
-            const checkboxes = document.querySelectorAll('.parcel-checkbox');
-            
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = selectAll.checked;
-            });
-            
-            updateSelectedCount();
-        }
-        
-        function updateSelectedCount() {
-            const checkedBoxes = document.querySelectorAll('.parcel-checkbox:checked');
-            const count = checkedBoxes.length;
-            const selectedCount = document.getElementById('selected-count');
-            
-            selectedCount.textContent = count + ' selected';
-            
-            // Update bulk form
-            const bulkForm = document.getElementById('bulk-form');
-            const existingInputs = bulkForm.querySelectorAll('input[name="parcel_ids[]"]');
-            existingInputs.forEach(input => input.remove());
-            
-            checkedBoxes.forEach(checkbox => {
-                const hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = 'parcel_ids[]';
-                hiddenInput.value = checkbox.value;
-                bulkForm.appendChild(hiddenInput);
-            });
-        }
-        
-        function confirmBulkUpdate() {
-            const selectedCount = document.querySelectorAll('.parcel-checkbox:checked').length;
-            const status = document.getElementById('bulk_status').value;
-            
-            if (selectedCount === 0) {
-                alert('Please select at least one parcel.');
-                return false;
-            }
-            
-            if (!status) {
-                alert('Please select a status to update to.');
-                return false;
-            }
-            
-            return confirm(`Update ${selectedCount} parcel(s) to "${status}"?`);
-        }
-        
-        function confirmStatusUpdate(selectElement) {
-            if (selectElement.value) {
-                const trackingNumber = selectElement.closest('tr').querySelector('strong').textContent;
-                const newStatus = selectElement.value.replace('_', ' ');
-                
-                if (confirm(`Update parcel ${trackingNumber} status to "${newStatus}"?`)) {
-                    selectElement.form.submit();
-                } else {
-                    selectElement.value = ''; // Reset selection
-                }
-            }
-        }
-        
-        // Auto-refresh functionality
-        let autoRefresh = false;
-        function toggleAutoRefresh() {
-            autoRefresh = !autoRefresh;
-            const button = document.getElementById('auto-refresh-btn');
-            
-            if (autoRefresh) {
-                button.textContent = 'Stop Auto-Refresh';
-                button.className = 'btn';
-                button.style.background = '#e74c3c';
-                setTimeout(function refreshPage() {
-                    if (autoRefresh) {
-                        location.reload();
-                    }
-                }, 30000); // Refresh every 30 seconds
+    function confirmStatusUpdate(selectElement) {
+        if (selectElement.value) {
+            const newStatus = selectElement.value.replace('_', ' ');
+            if (confirm(`Change parcel status to "${newStatus}"?`)) {
+                selectElement.form.submit();
             } else {
-                button.textContent = 'Auto-Refresh (30s)';
-                button.className = 'btn btn_success';
-                button.style.background = '';
+                selectElement.selectedIndex = 0; // Reset to "Change Status"
             }
         }
+    }
+    
+    // Auto-refresh functionality
+    let refreshInterval;
+    
+    function startAutoRefresh() {
+        refreshInterval = setInterval(function() {
+            if (document.hasFocus()) {
+                // Only refresh statistics, not the entire page
+                location.reload();
+            }
+        }, 300000); // 5 minutes
+    }
+    
+    function stopAutoRefresh() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+        }
+    }
+    
+    // Start auto-refresh when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        startAutoRefresh();
         
-        // Search functionality enhancement
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('search');
-            let searchTimeout;
-            
-            searchInput.addEventListener('input', function() {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    if (this.value.length >= 3 || this.value.length === 0) {
-                        // Auto-submit search after 1 second of no typing
-                        // this.form.submit();
-                    }
-                }, 1000);
+        // Stop auto-refresh when user is interacting with forms
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('focus', stopAutoRefresh, true);
+            form.addEventListener('blur', startAutoRefresh, true);
+        });
+    });
+    
+    // Visual feedback for actions
+    document.addEventListener('DOMContentLoaded', function() {
+        const actionButtons = document.querySelectorAll('.btn');
+        actionButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 100);
             });
         });
-    </script>
+    });
+</script>
 </body>
 </html>
