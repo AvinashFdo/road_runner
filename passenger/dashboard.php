@@ -316,7 +316,7 @@ function getHorizontalSeatNumber($seatNumber, $busId, $pdo) {
                             <button class="btn btn_success" onclick="window.location.href='../send_parcel.php'" style="width: 100%;">
                                 📦 Send Parcel
                             </button>
-                            <button class="btn btn_primary" onclick="alert('Review system feature coming soon!')" style="width: 100%;">
+                            <button class="btn btn_primary" onclick="window.location.href='../my_reviews.php'" style="width: 100%;">
                                 ⭐ My Reviews
                             </button>
                         </div>

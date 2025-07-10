@@ -285,6 +285,13 @@ try {
                             <span class="metric_label">Today's Bookings:</span>
                             <span class="metric_value" style="color: #3498db;"><?php echo $today_bookings; ?> booking<?php echo $today_bookings !== 1 ? 's' : ''; ?></span>
                         </div>
+                        <div class="p_2">
+                            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                <a href="../my_reviews.php" class="btn btn_success" style="text-align: center; text-decoration: none;">
+                                    📊 Bus Reviews
+                                </a>
+                            </div>
+                        </div>
                     <?php else: ?>
                         <p>Unable to load operator information.</p>
                     <?php endif; ?>

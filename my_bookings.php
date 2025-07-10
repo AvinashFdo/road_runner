@@ -434,10 +434,26 @@ function getBookingStatusDisplay($status) {
                             <div class="trip-actions">
                                 <a href="booking_details.php?ref=<?php echo urlencode($trip['bookings'][0]['booking_reference']); ?>" class="btn btn_primary" style="margin-bottom: 0.5rem;">
                                     📋 View Details
+                                <?php 
+                                // Check if user has already reviewed this trip
+                                $has_review = false;
+                                try {
+                                    $stmt = $pdo->prepare("SELECT review_id FROM reviews WHERE booking_id = ? AND passenger_id = ?");
+                                    $stmt->execute([$trip['trip_info']['booking_id'], $user_id]);
+                                    $has_review = $stmt->fetch() ? true : false;
+                                } catch (PDOException $e) {
+                                    // If error, assume no review
+                                }
+                                ?>
+                                
+                                <a href="rate_trip.php?booking_ref=<?php echo urlencode($trip['trip_info']['booking_reference']); ?>" 
+                                class="btn btn_primary" style="background: #28a745;">
+                                    <?php echo $has_review ? '✏️ Edit Review' : '⭐ Rate Trip'; ?>
                                 </a>
-                                <button class="btn btn_success" onclick="alert('Feedback feature coming soon!')" style="font-size: 0.9rem;">
-                                    ⭐ Rate Trip
-                                </button>
+                                
+                                <!-- View Reviews Button -->
+                                <a href="view_reviews.php?bus_id=<?php echo urlencode($trip['trip_info']['bus_id']); ?>" 
+                                class="btn" style="background: #6c757d;">📝 View Reviews</a>
                             </div>
                         </div>
                         
@@ -650,9 +666,14 @@ function getBookingStatusDisplay($status) {
 
         .trip-actions {
             display: flex;
-            flex-direction: column;
             gap: 0.5rem;
-            min-width: 150px;
+            flex-wrap: wrap;
+        }
+
+        .trip-actions .btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            white-space: nowrap;
         }
 
         .booking-detail {
@@ -678,6 +699,8 @@ function getBookingStatusDisplay($status) {
             font-weight: bold;
             font-size: 1.1rem;
         }
+
+        
 
         @media (max-width: 768px) {
             .trip-header {

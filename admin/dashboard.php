@@ -267,6 +267,9 @@ try {
                         <a href="parcels.php?status=cancelled" class="btn" style="background: #e74c3c; color: white; text-align: center; text-decoration: none;">
                             ❌ View Cancelled Parcels
                         </a>
+                        <a href="../my_reviews.php" class="btn" style="background:rgb(102, 219, 52); color: white; text-align: center; text-decoration: none;">
+                            🗂️ All Reviews
+                        </a>
                         
                     </div>
                 </div>
