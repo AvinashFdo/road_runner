@@ -14,13 +14,14 @@ $message = '';
 $error = '';
 
 // FIXED: Function to handle parcel status display
-function getParcelStatusDisplay($status) {
+function getParcelStatusDisplay($status)
+{
     // Handle empty/null status as cancelled
     $trimmed_status = trim($status ?? '');
     if (empty($trimmed_status)) {
         $trimmed_status = 'cancelled';
     }
-    
+
     switch ($trimmed_status) {
         case 'delivered':
             return [
@@ -54,11 +55,11 @@ function getParcelStatusDisplay($status) {
 // Handle admin actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
-    
+
     if ($action === 'update_status') {
         $parcel_id = $_POST['parcel_id'] ?? '';
         $new_status = $_POST['new_status'] ?? '';
-        
+
         try {
             $stmt = $pdo->prepare("UPDATE parcels SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE parcel_id = ?");
             $stmt->execute([$new_status, $parcel_id]);
@@ -66,17 +67,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (PDOException $e) {
             $error = "Error updating parcel status: " . $e->getMessage();
         }
-    }
-    
-    elseif ($action === 'delete_parcel') {
+    } elseif ($action === 'delete_parcel') {
         $parcel_id = $_POST['parcel_id'] ?? '';
-        
+
         try {
             // FIXED: Allow deletion of cancelled parcels (including empty status)
             $stmt = $pdo->prepare("SELECT status FROM parcels WHERE parcel_id = ?");
             $stmt->execute([$parcel_id]);
             $parcel = $stmt->fetch();
-            
+
             if ($parcel) {
                 $status = trim($parcel['status'] ?? '');
                 if (empty($status) || $status === 'cancelled' || $status === 'refunded') {
@@ -106,7 +105,7 @@ try {
     // Build dynamic WHERE clause based on filters
     $where_conditions = ["1=1"]; // Always true base condition
     $params = [];
-    
+
     // Date filter
     if ($filter_date !== 'all') {
         switch ($filter_date) {
@@ -121,7 +120,7 @@ try {
                 break;
         }
     }
-    
+
     // Status filter
     if ($filter_status !== 'all') {
         if ($filter_status === 'cancelled') {
@@ -132,28 +131,28 @@ try {
             $params[] = $filter_status;
         }
     }
-    
+
     // Route filter
     if ($filter_route !== 'all') {
         $where_conditions[] = "p.route_id = ?";
         $params[] = $filter_route;
     }
-    
+
     // Operator filter
     if ($filter_operator !== 'all') {
         $where_conditions[] = "b.operator_id = ?";
         $params[] = $filter_operator;
     }
-    
+
     // Search filter
     if (!empty($search)) {
         $where_conditions[] = "(p.tracking_number LIKE ? OR p.sender_name LIKE ? OR p.receiver_name LIKE ? OR p.receiver_phone LIKE ?)";
         $search_param = '%' . $search . '%';
         $params = array_merge($params, [$search_param, $search_param, $search_param, $search_param]);
     }
-    
+
     $where_clause = implode(" AND ", $where_conditions);
-    
+
     // Main query with all parcel information
     $stmt = $pdo->prepare("
         SELECT 
@@ -174,18 +173,18 @@ try {
     ");
     $stmt->execute($params);
     $parcels = $stmt->fetchAll();
-    
+
     // FIXED: Calculate statistics with proper cancelled counting
     $total_parcels = count($parcels);
     $pending_count = count(array_filter($parcels, fn($p) => trim($p['status'] ?? '') === 'pending'));
     $in_transit_count = count(array_filter($parcels, fn($p) => $p['status'] === 'in_transit'));
     $delivered_count = count(array_filter($parcels, fn($p) => $p['status'] === 'delivered'));
-    $cancelled_count = count(array_filter($parcels, function($p) {
+    $cancelled_count = count(array_filter($parcels, function ($p) {
         $status = trim($p['status'] ?? '');
         return empty($status) || $status === 'cancelled' || $status === 'refunded';
     }));
     $total_revenue = array_sum(array_column($parcels, 'delivery_cost'));
-    
+
     // Get system statistics
     $stmt = $pdo->query("
         SELECT 
@@ -197,11 +196,11 @@ try {
         WHERE status != 'cancelled' AND status IS NOT NULL AND status != ''
     ");
     $system_stats = $stmt->fetch();
-    
+
     // Get available routes for filter
     $stmt = $pdo->query("SELECT DISTINCT r.route_id, r.route_name FROM routes r JOIN parcels p ON r.route_id = p.route_id ORDER BY r.route_name");
     $available_routes = $stmt->fetchAll();
-    
+
     // Get available operators for filter
     $stmt = $pdo->query("
         SELECT DISTINCT op.user_id, op.full_name 
@@ -214,7 +213,7 @@ try {
         ORDER BY op.full_name
     ");
     $available_operators = $stmt->fetchAll();
-    
+
 } catch (PDOException $e) {
     $error = "Error loading parcels: " . $e->getMessage();
     $parcels = [];
@@ -227,18 +226,41 @@ try {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parcel Management - Road Runner Admin</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
-        .parcel-card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background: white; }
-        .parcel-header { display: flex; justify-content: between; align-items: center; margin-bottom: 1rem; }
-        .parcel-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
-        .status-update-form { display: inline-block; margin-right: 0.5rem; }
+        .parcel-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: white;
+        }
+
+        .parcel-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .parcel-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .status-update-form {
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
     </style>
 </head>
+
 <body>
     <!-- Header -->
     <header class="header">
@@ -261,9 +283,9 @@ try {
                 <a href="dashboard.php">Dashboard</a>
                 <a href="routes.php">Manage Routes</a>
                 <a href="parcels.php">Parcel Management</a>
-                <a href="#" onclick="alert('Coming soon!')">Manage Users</a>
-                <a href="#" onclick="alert('Coming soon!')">View All Buses</a>
-                <a href="#" onclick="alert('Coming soon!')">View All Bookings</a>
+                <a href="users.php">Manage Users</a>
+                <a href="buses.php">View All Buses</a>
+                <a href="bookings.php">View All Bookings</a>
             </div>
         </div>
     </div>
@@ -330,28 +352,37 @@ try {
             <h3 class="p_1">🔍 Filter Parcels</h3>
             <div class="p_2">
                 <form method="GET" action="parcels.php">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: end;">
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: end;">
                         <div class="form_group">
                             <label for="date">Date Filter:</label>
                             <select name="date" id="date" class="form_control">
-                                <option value="all" <?php echo $filter_date === 'all' ? 'selected' : ''; ?>>All Dates</option>
-                                <option value="today" <?php echo $filter_date === 'today' ? 'selected' : ''; ?>>Today</option>
-                                <option value="this_week" <?php echo $filter_date === 'this_week' ? 'selected' : ''; ?>>This Week</option>
-                                <option value="this_month" <?php echo $filter_date === 'this_month' ? 'selected' : ''; ?>>This Month</option>
+                                <option value="all" <?php echo $filter_date === 'all' ? 'selected' : ''; ?>>All Dates
+                                </option>
+                                <option value="today" <?php echo $filter_date === 'today' ? 'selected' : ''; ?>>Today
+                                </option>
+                                <option value="this_week" <?php echo $filter_date === 'this_week' ? 'selected' : ''; ?>>
+                                    This Week</option>
+                                <option value="this_month" <?php echo $filter_date === 'this_month' ? 'selected' : ''; ?>>
+                                    This Month</option>
                             </select>
                         </div>
-                        
+
                         <div class="form_group">
                             <label for="status">Status Filter:</label>
                             <select name="status" id="status" class="form_control">
-                                <option value="all" <?php echo $filter_status === 'all' ? 'selected' : ''; ?>>All Statuses</option>
-                                <option value="pending" <?php echo $filter_status === 'pending' ? 'selected' : ''; ?>>Pending</option>
+                                <option value="all" <?php echo $filter_status === 'all' ? 'selected' : ''; ?>>All Statuses
+                                </option>
+                                <option value="pending" <?php echo $filter_status === 'pending' ? 'selected' : ''; ?>>
+                                    Pending</option>
                                 <option value="in_transit" <?php echo $filter_status === 'in_transit' ? 'selected' : ''; ?>>In Transit</option>
-                                <option value="delivered" <?php echo $filter_status === 'delivered' ? 'selected' : ''; ?>>Delivered</option>
-                                <option value="cancelled" <?php echo $filter_status === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
+                                <option value="delivered" <?php echo $filter_status === 'delivered' ? 'selected' : ''; ?>>
+                                    Delivered</option>
+                                <option value="cancelled" <?php echo $filter_status === 'cancelled' ? 'selected' : ''; ?>>
+                                    Cancelled</option>
                             </select>
                         </div>
-                        
+
                         <div class="form_group">
                             <label for="route">Route Filter:</label>
                             <select name="route" id="route" class="form_control">
@@ -363,18 +394,20 @@ try {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        
+
                         <div class="form_group">
                             <label for="search">Search:</label>
-                            <input type="text" name="search" id="search" class="form_control" 
-                                   placeholder="Tracking number, name, phone..." value="<?php echo htmlspecialchars($search); ?>">
+                            <input type="text" name="search" id="search" class="form_control"
+                                placeholder="Tracking number, name, phone..."
+                                value="<?php echo htmlspecialchars($search); ?>">
                         </div>
-                        
+
                         <div class="form_group">
                             <label>&nbsp;</label>
                             <div style="display: flex; gap: 0.5rem;">
                                 <button type="submit" class="btn btn_primary" style="flex: 1;">Apply Filters</button>
-                                <a href="parcels.php" class="btn" style="background: #6c757d; color: white; text-decoration: none; flex: 1; text-align: center; display: flex; align-items: center; justify-content: center;">Clear</a>
+                                <a href="parcels.php" class="btn"
+                                    style="background: #6c757d; color: white; text-decoration: none; flex: 1; text-align: center; display: flex; align-items: center; justify-content: center;">Clear</a>
                             </div>
                         </div>
                     </div>
@@ -384,7 +417,8 @@ try {
 
         <!-- Parcels Table -->
         <div class="table_container">
-            <h3 class="p_1 mb_1">📦 Parcels (Showing <?php echo count($parcels); ?> of <?php echo $total_parcels; ?>)</h3>
+            <h3 class="p_1 mb_1">📦 Parcels (Showing <?php echo count($parcels); ?> of <?php echo $total_parcels; ?>)
+            </h3>
             <?php if (empty($parcels)): ?>
                 <div class="p_2">
                     <div class="alert alert_info">
@@ -418,7 +452,8 @@ try {
                                     <td>
                                         <strong><?php echo htmlspecialchars($parcel['route_name']); ?></strong><br>
                                         <small style="color: #666;">
-                                            <?php echo htmlspecialchars($parcel['origin']); ?> → <?php echo htmlspecialchars($parcel['destination']); ?><br>
+                                            <?php echo htmlspecialchars($parcel['origin']); ?> →
+                                            <?php echo htmlspecialchars($parcel['destination']); ?><br>
                                             Travel: <?php echo date('M j, Y', strtotime($parcel['travel_date'])); ?><br>
                                             <?php if ($parcel['operator_name']): ?>
                                                 Operator: <?php echo htmlspecialchars($parcel['operator_name']); ?>
@@ -434,12 +469,13 @@ try {
                                             Type: <?php echo htmlspecialchars($parcel['parcel_type'] ?: 'General'); ?><br>
                                             Weight: <?php echo $parcel['weight_kg']; ?> kg
                                         </small><br>
-                                        <strong style="color: #e74c3c;">LKR <?php echo number_format($parcel['delivery_cost']); ?></strong>
+                                        <strong style="color: #e74c3c;">LKR
+                                            <?php echo number_format($parcel['delivery_cost']); ?></strong>
                                     </td>
                                     <td>
                                         <?php $status_info = getParcelStatusDisplay($parcel['status']); ?>
                                         <span class="badge <?php echo $status_info['class']; ?>">
-                                            <?php echo $status_info['icon']; ?> <?php echo $status_info['text']; ?>
+                                            <?php echo $status_info['icon']; ?>         <?php echo $status_info['text']; ?>
                                         </span>
                                         <br><small style="color: #666;">
                                             Updated: <?php echo date('M j, g:i A', strtotime($parcel['updated_at'])); ?>
@@ -450,36 +486,39 @@ try {
                                             <!-- Status Update -->
                                             <form method="POST" class="status-update-form">
                                                 <input type="hidden" name="action" value="update_status">
-                                                <input type="hidden" name="parcel_id" value="<?php echo $parcel['parcel_id']; ?>">
-                                                <select name="new_status" class="form_control" style="font-size: 0.8rem; padding: 0.25rem;" onchange="confirmStatusUpdate(this)">
+                                                <input type="hidden" name="parcel_id"
+                                                    value="<?php echo $parcel['parcel_id']; ?>">
+                                                <select name="new_status" class="form_control"
+                                                    style="font-size: 0.8rem; padding: 0.25rem;"
+                                                    onchange="confirmStatusUpdate(this)">
                                                     <option value="">Change Status</option>
                                                     <option value="pending" <?php echo (trim($parcel['status'] ?? '') === 'pending') ? 'selected' : ''; ?>>Pending</option>
                                                     <option value="in_transit" <?php echo ($parcel['status'] === 'in_transit') ? 'selected' : ''; ?>>In Transit</option>
                                                     <option value="delivered" <?php echo ($parcel['status'] === 'delivered') ? 'selected' : ''; ?>>Delivered</option>
-                                                    <option value="cancelled" <?php echo (empty(trim($parcel['status'] ?? '')) || $parcel['status'] === 'cancelled') ? 'selected' : ''; ?>>Cancelled</option>
+                                                    <option value="cancelled" <?php echo (empty(trim($parcel['status'] ?? '')) || $parcel['status'] === 'cancelled') ? 'selected' : ''; ?>>Cancelled
+                                                    </option>
                                                 </select>
                                             </form>
-                                            
+
                                             <!-- Action Buttons -->
                                             <div style="display: flex; gap: 0.25rem;">
-                                                <a href="../track_parcel.php?tracking=<?php echo urlencode($parcel['tracking_number']); ?>" 
-                                                   class="btn btn_primary" 
-                                                   style="font-size: 0.7rem; padding: 0.2rem 0.4rem;" 
-                                                   target="_blank">
+                                                <a href="../track_parcel.php?tracking=<?php echo urlencode($parcel['tracking_number']); ?>"
+                                                    class="btn btn_primary" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;"
+                                                    target="_blank">
                                                     Track
                                                 </a>
-                                                
-                                                <?php 
+
+                                                <?php
                                                 $status = trim($parcel['status'] ?? '');
-                                                if (empty($status) || $status === 'cancelled' || $status === 'refunded'): 
-                                                ?>
+                                                if (empty($status) || $status === 'cancelled' || $status === 'refunded'):
+                                                    ?>
                                                     <form method="POST" style="display: inline;">
                                                         <input type="hidden" name="action" value="delete_parcel">
-                                                        <input type="hidden" name="parcel_id" value="<?php echo $parcel['parcel_id']; ?>">
-                                                        <button type="submit" 
-                                                                class="btn" 
-                                                                style="background: #dc3545; font-size: 0.7rem; padding: 0.2rem 0.4rem;"
-                                                                onclick="return confirm('Permanently delete this cancelled parcel? This action cannot be undone.')">
+                                                        <input type="hidden" name="parcel_id"
+                                                            value="<?php echo $parcel['parcel_id']; ?>">
+                                                        <button type="submit" class="btn"
+                                                            style="background: #dc3545; font-size: 0.7rem; padding: 0.2rem 0.4rem;"
+                                                            onclick="return confirm('Permanently delete this cancelled parcel? This action cannot be undone.')">
                                                             Delete
                                                         </button>
                                                     </form>
@@ -504,59 +543,60 @@ try {
     </footer>
 
     <script>
-    function confirmStatusUpdate(selectElement) {
-        if (selectElement.value) {
-            const newStatus = selectElement.value.replace('_', ' ');
-            if (confirm(`Change parcel status to "${newStatus}"?`)) {
-                selectElement.form.submit();
-            } else {
-                selectElement.selectedIndex = 0; // Reset to "Change Status"
+        function confirmStatusUpdate(selectElement) {
+            if (selectElement.value) {
+                const newStatus = selectElement.value.replace('_', ' ');
+                if (confirm(`Change parcel status to "${newStatus}"?`)) {
+                    selectElement.form.submit();
+                } else {
+                    selectElement.selectedIndex = 0; // Reset to "Change Status"
+                }
             }
         }
-    }
-    
-    // Auto-refresh functionality
-    let refreshInterval;
-    
-    function startAutoRefresh() {
-        refreshInterval = setInterval(function() {
-            if (document.hasFocus()) {
-                // Only refresh statistics, not the entire page
-                location.reload();
-            }
-        }, 300000); // 5 minutes
-    }
-    
-    function stopAutoRefresh() {
-        if (refreshInterval) {
-            clearInterval(refreshInterval);
+
+        // Auto-refresh functionality
+        let refreshInterval;
+
+        function startAutoRefresh() {
+            refreshInterval = setInterval(function () {
+                if (document.hasFocus()) {
+                    // Only refresh statistics, not the entire page
+                    location.reload();
+                }
+            }, 300000); // 5 minutes
         }
-    }
-    
-    // Start auto-refresh when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        startAutoRefresh();
-        
-        // Stop auto-refresh when user is interacting with forms
-        const forms = document.querySelectorAll('form');
-        forms.forEach(form => {
-            form.addEventListener('focus', stopAutoRefresh, true);
-            form.addEventListener('blur', startAutoRefresh, true);
-        });
-    });
-    
-    // Visual feedback for actions
-    document.addEventListener('DOMContentLoaded', function() {
-        const actionButtons = document.querySelectorAll('.btn');
-        actionButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                this.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    this.style.transform = 'scale(1)';
-                }, 100);
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        }
+
+        // Start auto-refresh when page loads
+        document.addEventListener('DOMContentLoaded', function () {
+            startAutoRefresh();
+
+            // Stop auto-refresh when user is interacting with forms
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('focus', stopAutoRefresh, true);
+                form.addEventListener('blur', startAutoRefresh, true);
             });
         });
-    });
-</script>
+
+        // Visual feedback for actions
+        document.addEventListener('DOMContentLoaded', function () {
+            const actionButtons = document.querySelectorAll('.btn');
+            actionButtons.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 100);
+                });
+            });
+        });
+    </script>
 </body>
+
 </html>

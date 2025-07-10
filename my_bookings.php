@@ -17,17 +17,17 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_booking'])) {
     $booking_refs = $_POST['booking_refs'] ?? '';
     $booking_references = explode(',', $booking_refs);
-    
+
     if (!empty($booking_references)) {
         try {
             $pdo->beginTransaction();
-            
+
             $cancelled_count = 0;
             $errors = [];
-            
+
             foreach ($booking_references as $booking_ref) {
                 $booking_ref = trim($booking_ref);
-                
+
                 // Check if booking can be cancelled
                 $stmt = $pdo->prepare("
                     SELECT b.*, s.departure_time 
@@ -37,37 +37,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_booking'])) {
                 ");
                 $stmt->execute([$booking_ref, $user_id]);
                 $booking = $stmt->fetch();
-                
+
                 if (!$booking) {
                     $errors[] = "Booking $booking_ref not found or cannot be cancelled.";
                     continue;
                 }
-                
+
                 // Check timing (2 hours before departure)
                 $departure_datetime = $booking['travel_date'] . ' ' . $booking['departure_time'];
                 $hours_until = (strtotime($departure_datetime) - time()) / 3600;
-                
+
                 if ($hours_until < 2) {
                     $errors[] = "Cannot cancel $booking_ref - less than 2 hours to departure.";
                     continue;
                 }
-                
+
                 // Cancel the booking
                 $stmt = $pdo->prepare("UPDATE bookings SET booking_status = 'cancelled' WHERE booking_reference = ?");
                 $stmt->execute([$booking_ref]);
                 $cancelled_count++;
             }
-            
+
             $pdo->commit();
-            
+
             if ($cancelled_count > 0) {
                 $message = "$cancelled_count booking(s) cancelled successfully. Contact support for refund assistance.";
             }
-            
+
             if (!empty($errors)) {
                 $error = implode(' ', $errors);
             }
-            
+
         } catch (PDOException $e) {
             $pdo->rollback();
             $error = "Error cancelling bookings: " . $e->getMessage();
@@ -97,12 +97,12 @@ try {
     ");
     $stmt->execute([$user_id]);
     $all_bookings = $stmt->fetchAll();
-    
+
     // Initialize arrays
     $upcoming_trips = [];
     $past_trips = [];
     $cancelled_trips = [];
-    
+
     // Only process if we have bookings
     if (!empty($all_bookings)) {
         // Group bookings by trip
@@ -112,24 +112,24 @@ try {
             if (empty($booking['travel_date']) || empty($booking['schedule_id']) || empty($booking['booking_date'])) {
                 continue; // Skip invalid booking data
             }
-            
+
             $group_key = $booking['travel_date'] . '_' . $booking['schedule_id'] . '_' . $booking['booking_date'];
-            
+
             if (!isset($grouped_bookings[$group_key])) {
                 $grouped_bookings[$group_key] = [
                     'trip_info' => $booking, // This contains all fields including bus_id
                     'bookings' => []
                 ];
             }
-            
+
             $grouped_bookings[$group_key]['bookings'][] = $booking;
         }
-        
+
         // Categorize trips
         foreach ($grouped_bookings as $group) {
             $trip_info = $group['trip_info'];
             $bookings = $group['bookings'];
-            
+
             // Check if any booking in group is cancelled or refunded
             $has_cancelled = false;
             foreach ($bookings as $booking) {
@@ -138,7 +138,7 @@ try {
                     break;
                 }
             }
-            
+
             if ($has_cancelled) {
                 $cancelled_trips[] = [
                     'trip_info' => $trip_info,
@@ -148,7 +148,7 @@ try {
                 // Check if trip is in the past
                 $departure_datetime = strtotime($trip_info['travel_date'] . ' ' . $trip_info['departure_time']);
                 $is_past = $departure_datetime < time();
-                
+
                 if ($is_past) {
                     $past_trips[] = [
                         'trip_info' => $trip_info,
@@ -163,7 +163,7 @@ try {
             }
         }
     }
-    
+
 } catch (PDOException $e) {
     $error = "Error loading bookings: " . $e->getMessage();
     $upcoming_trips = [];
@@ -172,45 +172,47 @@ try {
 }
 
 // Function to get seat configuration for horizontal display
-function getHorizontalSeatNumber($seatNumber, $busId, $pdo) {
+function getHorizontalSeatNumber($seatNumber, $busId, $pdo)
+{
     try {
         // If seat number is already a simple number, just return it
         if (is_numeric($seatNumber)) {
-            return (int)$seatNumber;
+            return (int) $seatNumber;
         }
-        
+
         // If it's in letter format (A1, B2, etc.), convert it
         if (preg_match('/^([A-Z])(\d+)$/', $seatNumber, $matches)) {
             $seatLetter = $matches[1];
-            $seatRowNum = (int)$matches[2];
-            
+            $seatRowNum = (int) $matches[2];
+
             // Get bus seat configuration
             $stmt = $pdo->prepare("SELECT seat_configuration FROM buses WHERE bus_id = ?");
             $stmt->execute([$busId]);
             $seatConfig = $stmt->fetch()['seat_configuration'] ?? '2x2';
-            
+
             // Parse configuration
             $config = explode('x', $seatConfig);
-            $leftSeats = (int)$config[0];
-            $rightSeats = (int)$config[1];
+            $leftSeats = (int) $config[0];
+            $rightSeats = (int) $config[1];
             $seatsPerRow = $leftSeats + $rightSeats;
-            
+
             $positionInRow = ord($seatLetter) - ord('A');
             $horizontalNumber = (($seatRowNum - 1) * $seatsPerRow) + $positionInRow + 1;
-            
+
             return $horizontalNumber;
         }
-        
+
         // If it's neither format, just return as-is
         return $seatNumber;
-        
+
     } catch (PDOException $e) {
         return $seatNumber;
     }
 }
 
 // Function to get booking status display
-function getBookingStatusDisplay($status) {
+function getBookingStatusDisplay($status)
+{
     switch ($status) {
         case 'pending':
             return ['text' => 'Pending', 'class' => 'badge_operator'];
@@ -230,12 +232,14 @@ function getBookingStatusDisplay($status) {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Bookings - Road Runner</title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
+
 <body>
     <!-- Header -->
     <header class="header">
@@ -290,7 +294,7 @@ function getBookingStatusDisplay($status) {
             </div>
             <div class="stat_card">
                 <div class="stat_number">
-                    <?php 
+                    <?php
                     $total_bookings = 0;
                     foreach (array_merge($upcoming_trips, $past_trips, $cancelled_trips) as $trip) {
                         $total_bookings += count($trip['bookings']);
@@ -331,41 +335,47 @@ function getBookingStatusDisplay($status) {
                                     🚌 <?php echo htmlspecialchars($trip['trip_info']['route_name']); ?>
                                     <span class="badge badge_active" style="margin-left: 1rem;">Upcoming</span>
                                 </h4>
-                                
+
                                 <div style="color: #666; margin-bottom: 1rem;">
-                                    <strong>From:</strong> <?php echo htmlspecialchars($trip['trip_info']['origin']); ?> 
+                                    <strong>From:</strong> <?php echo htmlspecialchars($trip['trip_info']['origin']); ?>
                                     <strong>To:</strong> <?php echo htmlspecialchars($trip['trip_info']['destination']); ?><br>
-                                    <strong>Date:</strong> <?php echo date('D, M j, Y', strtotime($trip['trip_info']['travel_date'])); ?><br>
-                                    <strong>Departure:</strong> <?php echo date('g:i A', strtotime($trip['trip_info']['departure_time'])); ?><br>
-                                    <strong>Bus:</strong> <?php echo htmlspecialchars($trip['trip_info']['bus_name']); ?> (<?php echo htmlspecialchars($trip['trip_info']['bus_number']); ?>)
+                                    <strong>Date:</strong>
+                                    <?php echo date('D, M j, Y', strtotime($trip['trip_info']['travel_date'])); ?><br>
+                                    <strong>Departure:</strong>
+                                    <?php echo date('g:i A', strtotime($trip['trip_info']['departure_time'])); ?><br>
+                                    <strong>Bus:</strong> <?php echo htmlspecialchars($trip['trip_info']['bus_name']); ?>
+                                    (<?php echo htmlspecialchars($trip['trip_info']['bus_number']); ?>)
                                 </div>
                             </div>
-                            
+
                             <div class="trip-actions">
-                                <?php 
+                                <?php
                                 $departure_datetime = strtotime($trip['trip_info']['travel_date'] . ' ' . $trip['trip_info']['departure_time']);
                                 $hours_until = ($departure_datetime - time()) / 3600;
                                 ?>
-                                
-                                <a href="booking_details.php?ref=<?php echo urlencode($trip['bookings'][0]['booking_reference']); ?>" class="btn btn_primary" style="margin-bottom: 0.5rem;">
+
+                                <a href="booking_details.php?ref=<?php echo urlencode($trip['bookings'][0]['booking_reference']); ?>"
+                                    class="btn btn_primary" style="margin-bottom: 0.5rem;">
                                     📋 View Details
                                 </a>
-                                
+
                                 <?php if ($hours_until >= 2): ?>
                                     <form method="POST" style="display: inline;" onsubmit="return confirmCancellation();">
-                                        <input type="hidden" name="booking_refs" value="<?php echo implode(',', array_column($trip['bookings'], 'booking_reference')); ?>">
+                                        <input type="hidden" name="booking_refs"
+                                            value="<?php echo implode(',', array_column($trip['bookings'], 'booking_reference')); ?>">
                                         <button type="submit" name="cancel_booking" class="btn" style="background: #dc3545;">
                                             ❌ Cancel Trip
                                         </button>
                                     </form>
                                 <?php else: ?>
-                                    <button class="btn" style="background: #6c757d;" disabled title="Cannot cancel within 2 hours of departure">
+                                    <button class="btn" style="background: #6c757d;" disabled
+                                        title="Cannot cancel within 2 hours of departure">
                                         ❌ Too Late to Cancel
                                     </button>
                                 <?php endif; ?>
                             </div>
                         </div>
-                        
+
                         <!-- Booking Details -->
                         <?php foreach ($trip['bookings'] as $booking): ?>
                             <?php $status = getBookingStatusDisplay($booking['booking_status']); ?>
@@ -383,8 +393,8 @@ function getBookingStatusDisplay($status) {
                                 </div>
                                 <div style="margin-top: 0.5rem; color: #666;">
                                     <strong>Passenger:</strong> <?php echo htmlspecialchars($booking['passenger_name']); ?> |
-                                    <strong>Seat:</strong> 
-                                    <?php 
+                                    <strong>Seat:</strong>
+                                    <?php
                                     // Use the booking's bus_id directly
                                     $seat_display = getHorizontalSeatNumber($booking['seat_number'], $booking['bus_id'], $pdo);
                                     echo $seat_display;
@@ -396,10 +406,11 @@ function getBookingStatusDisplay($status) {
                                 </div>
                             </div>
                         <?php endforeach; ?>
-                        
+
                         <div class="total-summary">
                             <div>Total Amount:</div>
-                            <div>LKR <?php echo number_format(array_sum(array_column($trip['bookings'], 'total_amount'))); ?></div>
+                            <div>LKR <?php echo number_format(array_sum(array_column($trip['bookings'], 'total_amount'))); ?>
+                            </div>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -422,41 +433,43 @@ function getBookingStatusDisplay($status) {
                                     🚌 <?php echo htmlspecialchars($trip['trip_info']['route_name']); ?>
                                     <span class="badge badge_success" style="margin-left: 1rem;">Completed</span>
                                 </h4>
-                                
+
                                 <div style="color: #666; margin-bottom: 1rem;">
-                                    <strong>From:</strong> <?php echo htmlspecialchars($trip['trip_info']['origin']); ?> 
+                                    <strong>From:</strong> <?php echo htmlspecialchars($trip['trip_info']['origin']); ?>
                                     <strong>To:</strong> <?php echo htmlspecialchars($trip['trip_info']['destination']); ?><br>
-                                    <strong>Date:</strong> <?php echo date('D, M j, Y', strtotime($trip['trip_info']['travel_date'])); ?><br>
+                                    <strong>Date:</strong>
+                                    <?php echo date('D, M j, Y', strtotime($trip['trip_info']['travel_date'])); ?><br>
                                     <strong>Bus:</strong> <?php echo htmlspecialchars($trip['trip_info']['bus_name']); ?>
                                 </div>
                             </div>
-                            
+
                             <div class="trip-actions">
-                                <a href="booking_details.php?ref=<?php echo urlencode($trip['bookings'][0]['booking_reference']); ?>" class="btn btn_primary" style="margin-bottom: 0.5rem;">
+                                <a href="booking_details.php?ref=<?php echo urlencode($trip['bookings'][0]['booking_reference']); ?>"
+                                    class="btn btn_primary" style="margin-bottom: 0.5rem;">
                                     📋 View Details
-                                <?php 
-                                // Check if user has already reviewed this trip
-                                $has_review = false;
-                                try {
-                                    $stmt = $pdo->prepare("SELECT review_id FROM reviews WHERE booking_id = ? AND passenger_id = ?");
-                                    $stmt->execute([$trip['trip_info']['booking_id'], $user_id]);
-                                    $has_review = $stmt->fetch() ? true : false;
-                                } catch (PDOException $e) {
-                                    // If error, assume no review
-                                }
-                                ?>
-                                
-                                <a href="rate_trip.php?booking_ref=<?php echo urlencode($trip['trip_info']['booking_reference']); ?>" 
-                                class="btn btn_primary" style="background: #28a745;">
-                                    <?php echo $has_review ? '✏️ Edit Review' : '⭐ Rate Trip'; ?>
-                                </a>
-                                
-                                <!-- View Reviews Button -->
-                                <a href="view_reviews.php?bus_id=<?php echo urlencode($trip['trip_info']['bus_id']); ?>" 
-                                class="btn" style="background: #6c757d;">📝 View Reviews</a>
+                                    <?php
+                                    // Check if user has already reviewed this trip
+                                    $has_review = false;
+                                    try {
+                                        $stmt = $pdo->prepare("SELECT review_id FROM reviews WHERE booking_id = ? AND passenger_id = ?");
+                                        $stmt->execute([$trip['trip_info']['booking_id'], $user_id]);
+                                        $has_review = $stmt->fetch() ? true : false;
+                                    } catch (PDOException $e) {
+                                        // If error, assume no review
+                                    }
+                                    ?>
+
+                                    <a href="rate_trip.php?booking_ref=<?php echo urlencode($trip['trip_info']['booking_reference']); ?>"
+                                        class="btn btn_primary" style="background: #28a745;">
+                                        <?php echo $has_review ? '✏️ Edit Review' : '⭐ Rate Trip'; ?>
+                                    </a>
+
+                                    <!-- View Reviews Button -->
+                                    <a href="view_reviews.php?bus_id=<?php echo urlencode($trip['trip_info']['bus_id']); ?>"
+                                        class="btn" style="background: #6c757d;">📝 View Reviews</a>
                             </div>
                         </div>
-                        
+
                         <!-- Booking Details -->
                         <?php foreach ($trip['bookings'] as $booking): ?>
                             <div class="booking-detail">
@@ -471,8 +484,8 @@ function getBookingStatusDisplay($status) {
                                 </div>
                                 <div style="margin-top: 0.5rem; color: #666;">
                                     <strong>Passenger:</strong> <?php echo htmlspecialchars($booking['passenger_name']); ?> |
-                                    <strong>Seat:</strong> 
-                                    <?php 
+                                    <strong>Seat:</strong>
+                                    <?php
                                     // Debug: Let's see what we're working with
                                     $seat_display = getHorizontalSeatNumber($booking['seat_number'], $trip['trip_info']['bus_id'], $pdo);
                                     echo $seat_display;
@@ -484,10 +497,11 @@ function getBookingStatusDisplay($status) {
                                 </div>
                             </div>
                         <?php endforeach; ?>
-                        
+
                         <div class="total-summary">
                             <div>Total Amount:</div>
-                            <div>LKR <?php echo number_format(array_sum(array_column($trip['bookings'], 'total_amount'))); ?></div>
+                            <div>LKR <?php echo number_format(array_sum(array_column($trip['bookings'], 'total_amount'))); ?>
+                            </div>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -510,26 +524,30 @@ function getBookingStatusDisplay($status) {
                                     🚌 <?php echo htmlspecialchars($trip['trip_info']['route_name']); ?>
                                     <span class="badge badge_inactive" style="margin-left: 1rem;">❌ Cancelled</span>
                                 </h4>
-                                
+
                                 <div style="color: #666; margin-bottom: 1rem;">
-                                    <strong>From:</strong> <?php echo htmlspecialchars($trip['trip_info']['origin']); ?> 
+                                    <strong>From:</strong> <?php echo htmlspecialchars($trip['trip_info']['origin']); ?>
                                     <strong>To:</strong> <?php echo htmlspecialchars($trip['trip_info']['destination']); ?><br>
-                                    <strong>Was scheduled for:</strong> <?php echo date('D, M j, Y', strtotime($trip['trip_info']['travel_date'])); ?><br>
+                                    <strong>Was scheduled for:</strong>
+                                    <?php echo date('D, M j, Y', strtotime($trip['trip_info']['travel_date'])); ?><br>
                                     <strong>Bus:</strong> <?php echo htmlspecialchars($trip['trip_info']['bus_name']); ?><br>
-                                    <strong>Cancelled:</strong> <?php echo date('M j, Y', strtotime($trip['trip_info']['booking_date'])); ?>
+                                    <strong>Cancelled:</strong>
+                                    <?php echo date('M j, Y', strtotime($trip['trip_info']['booking_date'])); ?>
                                 </div>
                             </div>
-                            
+
                             <div class="trip-actions">
-                                <a href="booking_details.php?ref=<?php echo urlencode($trip['bookings'][0]['booking_reference']); ?>" class="btn btn_primary" style="margin-bottom: 0.5rem;">
+                                <a href="booking_details.php?ref=<?php echo urlencode($trip['bookings'][0]['booking_reference']); ?>"
+                                    class="btn btn_primary" style="margin-bottom: 0.5rem;">
                                     📋 View Details
                                 </a>
-                                <button class="btn" style="background: #6c757d; color: white; font-size: 0.9rem;" onclick="alert('For refund assistance, please contact support at +94 11 123 4567 or email support@roadrunner.lk')">
+                                <button class="btn" style="background: #6c757d; color: white; font-size: 0.9rem;"
+                                    onclick="alert('For refund assistance, please contact support at +94 11 123 4567 or email support@roadrunner.lk')">
                                     📞 Contact Support
                                 </button>
                             </div>
                         </div>
-                        
+
                         <!-- Booking Details -->
                         <?php foreach ($trip['bookings'] as $booking): ?>
                             <div class="booking-detail">
@@ -544,8 +562,8 @@ function getBookingStatusDisplay($status) {
                                 </div>
                                 <div style="margin-top: 0.5rem; color: #666;">
                                     <strong>Passenger:</strong> <?php echo htmlspecialchars($booking['passenger_name']); ?> |
-                                    <strong>Seat:</strong> 
-                                    <?php 
+                                    <strong>Seat:</strong>
+                                    <?php
                                     // Debug: Let's see what we're working with
                                     $seat_display = getHorizontalSeatNumber($booking['seat_number'], $trip['trip_info']['bus_id'], $pdo);
                                     echo $seat_display;
@@ -557,20 +575,23 @@ function getBookingStatusDisplay($status) {
                                 </div>
                             </div>
                         <?php endforeach; ?>
-                        
+
                         <div class="total-summary">
                             <div>Amount:</div>
-                            <div>LKR <?php echo number_format(array_sum(array_column($trip['bookings'], 'total_amount'))); ?></div>
+                            <div>LKR <?php echo number_format(array_sum(array_column($trip['bookings'], 'total_amount'))); ?>
+                            </div>
                         </div>
-                        
+
                         <!-- Cancellation Information -->
-                        <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; font-size: 0.9rem;">
+                        <div
+                            style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; font-size: 0.9rem;">
                             <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
                                 <span style="font-size: 1.2rem; margin-right: 0.5rem;">❌</span>
                                 <strong>Booking Cancelled</strong>
                             </div>
                             <p style="margin: 0; color: #666;">
-                                This booking has been cancelled. For refund inquiries or assistance, please contact our customer support team.
+                                This booking has been cancelled. For refund inquiries or assistance, please contact our customer
+                                support team.
                             </p>
                             <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #666;">
                                 <strong>📞 Support:</strong> +94 11 123 4567 | <strong>📧 Email:</strong> support@roadrunner.lk
@@ -594,11 +615,11 @@ function getBookingStatusDisplay($status) {
             // Hide all tab contents
             const contents = document.querySelectorAll('.tab_content');
             contents.forEach(content => content.classList.remove('active'));
-            
+
             // Remove active class from all tab buttons
             const buttons = document.querySelectorAll('.tab_btn');
             buttons.forEach(button => button.classList.remove('active'));
-            
+
             // Show selected tab content
             document.getElementById(tabName + '-content').classList.add('active');
             document.getElementById(tabName + '-tab').classList.add('active');
@@ -700,7 +721,7 @@ function getBookingStatusDisplay($status) {
             font-size: 1.1rem;
         }
 
-        
+
 
         @media (max-width: 768px) {
             .trip-header {
@@ -730,4 +751,5 @@ function getBookingStatusDisplay($status) {
         }
     </style>
 </body>
+
 </html>

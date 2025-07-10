@@ -28,11 +28,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_parcel'])) {
     $weight_kg = $_POST['weight_kg'] ?? '';
     $parcel_type = trim($_POST['parcel_type'] ?? '');
     $parcel_description = trim($_POST['parcel_description'] ?? '');
-    
+
     // Validation
-    if (empty($route_id) || empty($sender_name) || empty($sender_phone) || 
-        empty($receiver_name) || empty($receiver_phone) || empty($receiver_address) || 
-        empty($travel_date) || empty($weight_kg)) {
+    if (
+        empty($route_id) || empty($sender_name) || empty($sender_phone) ||
+        empty($receiver_name) || empty($receiver_phone) || empty($receiver_address) ||
+        empty($travel_date) || empty($weight_kg)
+    ) {
         $error = "Please fill in all required fields.";
     } elseif (!is_numeric($weight_kg) || $weight_kg <= 0 || $weight_kg > 50) {
         $error = "Weight must be between 0.1 kg and 50 kg.";
@@ -46,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_parcel'])) {
             $stmt = $pdo->prepare("SELECT distance_km, route_name, origin, destination FROM routes WHERE route_id = ? AND status = 'active'");
             $stmt->execute([$route_id]);
             $route_info = $stmt->fetch();
-            
+
             if (!$route_info) {
                 $error = "Selected route is not available.";
             } else {
@@ -55,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_parcel'])) {
                 $weight_rate = $weight_kg * 50; // LKR 50 per kg
                 $distance_rate = $route_info['distance_km'] * 2; // LKR 2 per km
                 $delivery_cost = $base_rate + $weight_rate + $distance_rate;
-                
+
                 // Store parcel data in session for payment processing
                 $_SESSION['pending_parcel'] = [
                     'route_id' => $route_id,
@@ -74,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_parcel'])) {
                     'destination' => $route_info['destination'],
                     'distance_km' => $route_info['distance_km']
                 ];
-                
+
                 // Redirect to payment page
                 header('Location: parcel_payment.php');
                 exit();
@@ -113,12 +115,14 @@ try {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Send Parcel - Road Runner</title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
+
 <body>
     <!-- Header -->
     <header class="header">
@@ -160,7 +164,8 @@ try {
         <!-- Parcel Service Info -->
         <div class="alert alert_info mb_2">
             <h4>📦 Road Runner Parcel Delivery Service</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
                 <div>
                     <strong>🚌 Bus Route Delivery:</strong><br>
                     Your parcel travels along with passenger buses for cost-effective delivery.
@@ -189,11 +194,12 @@ try {
                     <select id="route_id" name="route_id" class="form_control" required onchange="calculateCost()">
                         <option value="">Choose delivery route...</option>
                         <?php foreach ($routes as $route): ?>
-                            <option value="<?php echo $route['route_id']; ?>" 
-                                    data-distance="<?php echo $route['distance_km']; ?>"
-                                    data-route-name="<?php echo htmlspecialchars($route['route_name']); ?>">
-                                <?php echo htmlspecialchars($route['route_name']); ?> 
-                                (<?php echo htmlspecialchars($route['origin']); ?> → <?php echo htmlspecialchars($route['destination']); ?>) 
+                            <option value="<?php echo $route['route_id']; ?>"
+                                data-distance="<?php echo $route['distance_km']; ?>"
+                                data-route-name="<?php echo htmlspecialchars($route['route_name']); ?>">
+                                <?php echo htmlspecialchars($route['route_name']); ?>
+                                (<?php echo htmlspecialchars($route['origin']); ?> →
+                                <?php echo htmlspecialchars($route['destination']); ?>)
                                 - <?php echo $route['distance_km']; ?> km
                             </option>
                         <?php endforeach; ?>
@@ -203,45 +209,27 @@ try {
                 <!-- Travel Date -->
                 <div class="form_group">
                     <label for="travel_date">Delivery Date: *</label>
-                    <input 
-                        type="date" 
-                        id="travel_date" 
-                        name="travel_date" 
-                        class="form_control" 
-                        min="<?php echo date('Y-m-d'); ?>"
-                        required
-                    >
+                    <input type="date" id="travel_date" name="travel_date" class="form_control"
+                        min="<?php echo date('Y-m-d'); ?>" required>
                 </div>
 
                 <!-- Sender Information -->
                 <fieldset style="border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin: 1rem 0;">
                     <legend style="padding: 0 0.5rem; font-weight: bold; color: #2c3e50;">Sender Information</legend>
-                    
+
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div class="form_group">
                             <label for="sender_name">Sender Name: *</label>
-                            <input 
-                                type="text" 
-                                id="sender_name" 
-                                name="sender_name" 
-                                class="form_control" 
+                            <input type="text" id="sender_name" name="sender_name" class="form_control"
                                 value="<?php echo $user_info ? htmlspecialchars($user_info['full_name']) : ''; ?>"
-                                required
-                            >
+                                required>
                         </div>
-                        
+
                         <div class="form_group">
                             <label for="sender_phone">Sender Phone: *</label>
-                            <input 
-                                type="tel" 
-                                id="sender_phone" 
-                                name="sender_phone" 
-                                class="form_control" 
+                            <input type="tel" id="sender_phone" name="sender_phone" class="form_control"
                                 value="<?php echo $user_info ? htmlspecialchars($user_info['phone']) : ''; ?>"
-                                placeholder="0771234567"
-                                pattern="[0-9]{10}"
-                                required
-                            >
+                                placeholder="0771234567" pattern="[0-9]{10}" required>
                         </div>
                     </div>
                 </fieldset>
@@ -249,68 +237,39 @@ try {
                 <!-- Receiver Information -->
                 <fieldset style="border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin: 1rem 0;">
                     <legend style="padding: 0 0.5rem; font-weight: bold; color: #2c3e50;">Receiver Information</legend>
-                    
+
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div class="form_group">
                             <label for="receiver_name">Receiver Name: *</label>
-                            <input 
-                                type="text" 
-                                id="receiver_name" 
-                                name="receiver_name" 
-                                class="form_control" 
-                                required
-                            >
+                            <input type="text" id="receiver_name" name="receiver_name" class="form_control" required>
                         </div>
-                        
+
                         <div class="form_group">
                             <label for="receiver_phone">Receiver Phone: *</label>
-                            <input 
-                                type="tel" 
-                                id="receiver_phone" 
-                                name="receiver_phone" 
-                                class="form_control" 
-                                placeholder="0777654321"
-                                pattern="[0-9]{10}"
-                                required
-                            >
+                            <input type="tel" id="receiver_phone" name="receiver_phone" class="form_control"
+                                placeholder="0777654321" pattern="[0-9]{10}" required>
                         </div>
                     </div>
-                    
+
                     <div class="form_group">
                         <label for="receiver_address">Receiver Address: *</label>
-                        <textarea 
-                            id="receiver_address" 
-                            name="receiver_address" 
-                            class="form_control" 
-                            rows="3"
-                            placeholder="Complete address including house number, street, city"
-                            required
-                        ></textarea>
+                        <textarea id="receiver_address" name="receiver_address" class="form_control" rows="3"
+                            placeholder="Complete address including house number, street, city" required></textarea>
                     </div>
                 </fieldset>
 
                 <!-- Parcel Information -->
                 <fieldset style="border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin: 1rem 0;">
                     <legend style="padding: 0 0.5rem; font-weight: bold; color: #2c3e50;">Parcel Information</legend>
-                    
+
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div class="form_group">
                             <label for="weight_kg">Weight (kg): *</label>
-                            <input 
-                                type="number" 
-                                id="weight_kg" 
-                                name="weight_kg" 
-                                class="form_control" 
-                                step="0.1" 
-                                min="0.1" 
-                                max="50"
-                                placeholder="e.g., 2.5"
-                                required
-                                onchange="calculateCost()"
-                                oninput="calculateCost()"
-                            >
+                            <input type="number" id="weight_kg" name="weight_kg" class="form_control" step="0.1"
+                                min="0.1" max="50" placeholder="e.g., 2.5" required onchange="calculateCost()"
+                                oninput="calculateCost()">
                         </div>
-                        
+
                         <div class="form_group">
                             <label for="parcel_type">Parcel Type:</label>
                             <select id="parcel_type" name="parcel_type" class="form_control">
@@ -325,23 +284,18 @@ try {
                             </select>
                         </div>
                     </div>
-                    
+
                     <div class="form_group">
                         <label for="parcel_description">Parcel Description (Optional):</label>
-                        <textarea 
-                            id="parcel_description" 
-                            name="parcel_description" 
-                            class="form_control" 
-                            rows="2"
-                            placeholder="Brief description of parcel contents (for internal tracking)"
-                        ></textarea>
+                        <textarea id="parcel_description" name="parcel_description" class="form_control" rows="2"
+                            placeholder="Brief description of parcel contents (for internal tracking)"></textarea>
                     </div>
                 </fieldset>
 
                 <!-- Cost Calculation -->
                 <div style="background: #f8f9fa; border-radius: 8px; padding: 1rem; margin: 1rem 0;">
                     <h4 style="margin-bottom: 1rem; color: #2c3e50;">💰 Delivery Cost Calculation</h4>
-                    
+
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
@@ -358,23 +312,26 @@ try {
                             </div>
                         </div>
                         <div style="text-align: center; border-left: 2px solid #ddd; padding-left: 1rem;">
-                            <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">Total Delivery Cost</div>
-                            <div style="font-size: 2rem; font-weight: bold; color: #e74c3c;" id="total_cost">LKR 500.00</div>
+                            <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">Total Delivery Cost
+                            </div>
+                            <div style="font-size: 2rem; font-weight: bold; color: #e74c3c;" id="total_cost">LKR 500.00
+                            </div>
                         </div>
                     </div>
-                    
+
                     <div style="font-size: 0.9rem; color: #666; text-align: center;">
                         💡 Cost includes pickup from bus station and delivery notification to receiver
                     </div>
                 </div>
 
                 <!-- Submit Button -->
-                <button type="submit" name="send_parcel" class="btn btn_primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
+                <button type="submit" name="send_parcel" class="btn btn_primary"
+                    style="width: 100%; padding: 1rem; font-size: 1.1rem;">
                     📦 Send Parcel
                 </button>
-                
+
                 <p style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: #666;">
-                    <a href="index.php">← Back to Home</a> | 
+                    <a href="index.php">← Back to Home</a> |
                     <a href="my_parcels.php">My Parcels</a>
                 </p>
             </form>
@@ -383,7 +340,8 @@ try {
                 <p>After filling the parcel details, you can choose to:</p>
                 <ul style="margin: 0.5rem 0; padding-left: 2rem;">
                     <li><strong>Pay Now:</strong> Complete payment online with your card for instant confirmation</li>
-                    <li><strong>Pay at Pickup:</strong> Book now and pay when you drop off the parcel at the station</li>
+                    <li><strong>Pay at Pickup:</strong> Book now and pay when you drop off the parcel at the station
+                    </li>
                 </ul>
             </div>
         </div>
@@ -398,7 +356,7 @@ try {
 
     <script>
         // Set default delivery date to tomorrow
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             document.getElementById('travel_date').value = tomorrow.toISOString().split('T')[0];
@@ -408,23 +366,23 @@ try {
         function calculateCost() {
             const routeSelect = document.getElementById('route_id');
             const weightInput = document.getElementById('weight_kg');
-            
+
             const baseRate = 500;
             const weightRate = 50; // per kg
             const distanceRate = 2; // per km
-            
+
             let weight = parseFloat(weightInput.value) || 0;
             let distance = 0;
-            
+
             if (routeSelect.selectedIndex > 0) {
                 const selectedOption = routeSelect.options[routeSelect.selectedIndex];
                 distance = parseFloat(selectedOption.dataset.distance) || 0;
             }
-            
+
             const weightCost = weight * weightRate;
             const distanceCost = distance * distanceRate;
             const totalCost = baseRate + weightCost + distanceCost;
-            
+
             // Update display
             document.getElementById('weight_display').textContent = weight.toFixed(1);
             document.getElementById('distance_display').textContent = distance.toFixed(1);
@@ -434,28 +392,28 @@ try {
         }
 
         // Form validation
-        document.getElementById('parcel_form').addEventListener('submit', function(e) {
+        document.getElementById('parcel_form').addEventListener('submit', function (e) {
             const weight = parseFloat(document.getElementById('weight_kg').value);
-            
+
             if (weight > 50) {
                 e.preventDefault();
                 alert('Weight cannot exceed 50kg. For larger parcels, please contact our support team.');
                 return false;
             }
-            
+
             if (weight <= 0) {
                 e.preventDefault();
                 alert('Please enter a valid weight.');
                 return false;
             }
-            
+
             // Confirm submission
             const routeSelect = document.getElementById('route_id');
             const routeName = routeSelect.options[routeSelect.selectedIndex].dataset.routeName;
             const totalCost = document.getElementById('total_cost').textContent;
-            
+
             const confirmMessage = `Confirm parcel delivery?\n\nRoute: ${routeName}\nWeight: ${weight}kg\nTotal Cost: ${totalCost}\n\nProceed with booking?`;
-            
+
             if (!confirm(confirmMessage)) {
                 e.preventDefault();
                 return false;
@@ -463,4 +421,5 @@ try {
         });
     </script>
 </body>
+
 </html>

@@ -18,7 +18,7 @@ $error = '';
 // Handle parcel cancellation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_parcel'])) {
     $parcel_id = $_POST['parcel_id'] ?? '';
-    
+
     try {
         // Check if parcel belongs to user and can be cancelled
         $stmt = $pdo->prepare("
@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_parcel'])) {
         ");
         $stmt->execute([$parcel_id, $user_id]);
         $parcel = $stmt->fetch();
-        
+
         if (!$parcel) {
             $error = "Parcel not found or cannot be cancelled.";
         } else {
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_parcel'])) {
             $travel_datetime = strtotime($parcel['travel_date']);
             $time_difference = $travel_datetime - time();
             $hours_until_travel = $time_difference / 3600;
-            
+
             if ($hours_until_travel < 24) {
                 $error = "Cannot cancel parcel. Cancellation is only allowed up to 24 hours before delivery date.";
             } else {
@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_parcel'])) {
                 $message = "Parcel cancelled successfully. Refund will be processed within 3-5 business days.";
             }
         }
-        
+
     } catch (PDOException $e) {
         $error = "Error cancelling parcel: " . $e->getMessage();
     }
@@ -66,7 +66,7 @@ try {
     ");
     $stmt->execute([$user_id]);
     $all_parcels = $stmt->fetchAll();
-    
+
     // Debug: Add temporary status check
     if (isset($_GET['debug'])) {
         echo "<pre>";
@@ -78,7 +78,7 @@ try {
             echo "  Status: '" . $status . "' (length: $status_length)\n";
             echo "  Travel Date: " . $parcel['travel_date'] . "\n";
             echo "  Will be categorized as: ";
-            
+
             // Test the categorization logic
             $trimmed_status = trim($status);
             if (empty($trimmed_status)) {
@@ -97,23 +97,23 @@ try {
         echo "=========================\n";
         echo "</pre>";
     }
-    
+
     // Separate parcels by status and date
     $active_parcels = [];
     $delivered_parcels = [];
     $cancelled_parcels = [];
-    
+
     foreach ($all_parcels as $parcel) {
         $travel_datetime = strtotime($parcel['travel_date']);
         $is_future = $travel_datetime > time();
-        
+
         // Handle empty/null status
         $status = trim($parcel['status'] ?? '');
         if (empty($status)) {
             // For demo purposes, assume empty status means cancelled
             $status = 'cancelled';
         }
-        
+
         // Show all cancelled and refunded parcels in cancelled section
         if (in_array($status, ['cancelled', 'refunded']) || empty(trim($parcel['status'] ?? ''))) {
             $cancelled_parcels[] = $parcel;
@@ -131,7 +131,7 @@ try {
             $cancelled_parcels[] = $parcel;
         }
     }
-    
+
 } catch (PDOException $e) {
     $error = "Error loading parcels: " . $e->getMessage();
     $active_parcels = [];
@@ -144,9 +144,10 @@ $total_parcels = count($all_parcels);
 $total_spent = array_sum(array_column($all_parcels, 'delivery_cost'));
 
 // Function to get cancellation status display (simplified)
-function getCancellationStatusDisplay($status) {
+function getCancellationStatusDisplay($status)
+{
     $trimmed_status = trim($status ?? '');
-    
+
     if (empty($trimmed_status) || $trimmed_status === 'cancelled') {
         return [
             'text' => 'Cancelled',
@@ -174,12 +175,14 @@ function getCancellationStatusDisplay($status) {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Parcels - Road Runner</title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
+
 <body>
     <!-- Header -->
     <header class="header">
@@ -265,26 +268,30 @@ function getCancellationStatusDisplay($status) {
                             <div class="trip-title">
                                 <h4 style="color: #2c3e50; margin-bottom: 0.5rem;">
                                     📦 <?php echo htmlspecialchars($parcel['tracking_number']); ?>
-                                    <span class="badge badge_<?php echo $parcel['status'] === 'in_transit' ? 'operator' : 'active'; ?>" style="margin-left: 1rem;">
+                                    <span
+                                        class="badge badge_<?php echo $parcel['status'] === 'in_transit' ? 'operator' : 'active'; ?>"
+                                        style="margin-left: 1rem;">
                                         <?php echo ucfirst($parcel['status']); ?>
                                     </span>
                                 </h4>
-                                
+
                                 <div style="color: #666; margin-bottom: 1rem;">
                                     <strong>Route:</strong> <?php echo htmlspecialchars($parcel['route_name']); ?><br>
-                                    <strong>From:</strong> <?php echo htmlspecialchars($parcel['origin']); ?> 
+                                    <strong>From:</strong> <?php echo htmlspecialchars($parcel['origin']); ?>
                                     <strong>To:</strong> <?php echo htmlspecialchars($parcel['destination']); ?><br>
-                                    <strong>Delivery Date:</strong> <?php echo date('D, M j, Y', strtotime($parcel['travel_date'])); ?><br>
+                                    <strong>Delivery Date:</strong>
+                                    <?php echo date('D, M j, Y', strtotime($parcel['travel_date'])); ?><br>
                                     <strong>Receiver:</strong> <?php echo htmlspecialchars($parcel['receiver_name']); ?><br>
                                     <strong>Weight:</strong> <?php echo $parcel['weight_kg']; ?> kg
                                 </div>
                             </div>
-                            
+
                             <div class="trip-actions">
-                                <a href="track_parcel.php?tracking=<?php echo urlencode($parcel['tracking_number']); ?>" class="btn btn_primary" style="margin-bottom: 0.5rem;">
+                                <a href="track_parcel.php?tracking=<?php echo urlencode($parcel['tracking_number']); ?>"
+                                    class="btn btn_primary" style="margin-bottom: 0.5rem;">
                                     📱 Track Parcel
                                 </a>
-                                
+
                                 <?php if ($parcel['status'] === 'pending'): ?>
                                     <?php
                                     $travel_datetime = strtotime($parcel['travel_date']);
@@ -292,28 +299,32 @@ function getCancellationStatusDisplay($status) {
                                     $hours_until_travel = $time_difference / 3600;
                                     ?>
                                     <?php if ($hours_until_travel >= 24): ?>
-                                        <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel this parcel? This action cannot be undone.');">
+                                        <form method="POST" style="display: inline;"
+                                            onsubmit="return confirm('Are you sure you want to cancel this parcel? This action cannot be undone.');">
                                             <input type="hidden" name="parcel_id" value="<?php echo $parcel['parcel_id']; ?>">
-                                            <button type="submit" name="cancel_parcel" class="btn" style="background: #dc3545; font-size: 0.9rem;">
+                                            <button type="submit" name="cancel_parcel" class="btn"
+                                                style="background: #dc3545; font-size: 0.9rem;">
                                                 ❌ Cancel Parcel
                                             </button>
                                         </form>
                                     <?php else: ?>
-                                        <button class="btn" style="background: #6c757d; font-size: 0.9rem;" disabled title="Cannot cancel within 24 hours of delivery">
+                                        <button class="btn" style="background: #6c757d; font-size: 0.9rem;" disabled
+                                            title="Cannot cancel within 24 hours of delivery">
                                             ❌ Too Late to Cancel
                                         </button>
                                     <?php endif; ?>
                                 <?php endif; ?>
                             </div>
                         </div>
-                        
+
                         <div class="total-summary">
                             <div>Delivery Cost:</div>
                             <div>LKR <?php echo number_format($parcel['delivery_cost']); ?></div>
                         </div>
-                        
-                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee; font-size: 0.9rem; color: #666;">
-                            <strong>📍 Status:</strong> 
+
+                        <div
+                            style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee; font-size: 0.9rem; color: #666;">
+                            <strong>📍 Status:</strong>
                             <?php if ($parcel['status'] === 'pending'): ?>
                                 Scheduled for delivery | Distance: <?php echo $parcel['distance_km']; ?> km
                             <?php else: ?>
@@ -341,33 +352,37 @@ function getCancellationStatusDisplay($status) {
                                     📦 <?php echo htmlspecialchars($parcel['tracking_number']); ?>
                                     <span class="badge badge_active" style="margin-left: 1rem;">Delivered</span>
                                 </h4>
-                                
+
                                 <div style="color: #666; margin-bottom: 1rem;">
                                     <strong>Route:</strong> <?php echo htmlspecialchars($parcel['route_name']); ?><br>
-                                    <strong>Delivered:</strong> <?php echo date('D, M j, Y', strtotime($parcel['travel_date'])); ?><br>
+                                    <strong>Delivered:</strong>
+                                    <?php echo date('D, M j, Y', strtotime($parcel['travel_date'])); ?><br>
                                     <strong>Receiver:</strong> <?php echo htmlspecialchars($parcel['receiver_name']); ?><br>
                                     <strong>Weight:</strong> <?php echo $parcel['weight_kg']; ?> kg
                                 </div>
                             </div>
-                            
+
                             <div class="trip-actions">
-                                <a href="track_parcel.php?tracking=<?php echo urlencode($parcel['tracking_number']); ?>" class="btn btn_primary" style="font-size: 0.9rem;">
+                                <a href="track_parcel.php?tracking=<?php echo urlencode($parcel['tracking_number']); ?>"
+                                    class="btn btn_primary" style="font-size: 0.9rem;">
                                     📱 View Details
                                 </a>
                                 <div style="margin-top: 0.5rem;">
-                                    <button class="btn btn_success" onclick="alert('Feedback feature coming soon!')" style="font-size: 0.9rem;">
+                                    <button class="btn btn_success" onclick="alert('Feedback feature coming soon!')"
+                                        style="font-size: 0.9rem;">
                                         ⭐ Rate Service
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="total-summary">
                             <div>Delivery Cost:</div>
                             <div>LKR <?php echo number_format($parcel['delivery_cost']); ?></div>
                         </div>
-                        
-                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee; font-size: 0.9rem; color: #666;">
+
+                        <div
+                            style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee; font-size: 0.9rem; color: #666;">
                             <strong>✅ Delivery Completed</strong> | Distance: <?php echo $parcel['distance_km']; ?> km
                         </div>
                     </div>
@@ -391,51 +406,59 @@ function getCancellationStatusDisplay($status) {
                                 <h4 style="color: #2c3e50; margin-bottom: 0.5rem;">
                                     📦 <?php echo htmlspecialchars($parcel['tracking_number']); ?>
                                     <span class="badge <?php echo $cancellation_status['class']; ?>" style="margin-left: 1rem;">
-                                        <?php echo $cancellation_status['icon']; ?> <?php echo $cancellation_status['text']; ?>
+                                        <?php echo $cancellation_status['icon']; ?>         <?php echo $cancellation_status['text']; ?>
                                     </span>
                                 </h4>
-                                
+
                                 <div style="color: #666; margin-bottom: 1rem;">
                                     <strong>Route:</strong> <?php echo htmlspecialchars($parcel['route_name']); ?><br>
-                                    <strong>Was scheduled for:</strong> <?php echo date('D, M j, Y', strtotime($parcel['travel_date'])); ?><br>
-                                    <strong>From:</strong> <?php echo htmlspecialchars($parcel['origin']); ?> 
+                                    <strong>Was scheduled for:</strong>
+                                    <?php echo date('D, M j, Y', strtotime($parcel['travel_date'])); ?><br>
+                                    <strong>From:</strong> <?php echo htmlspecialchars($parcel['origin']); ?>
                                     <strong>To:</strong> <?php echo htmlspecialchars($parcel['destination']); ?><br>
                                     <strong>Receiver:</strong> <?php echo htmlspecialchars($parcel['receiver_name']); ?><br>
                                     <strong>Weight:</strong> <?php echo $parcel['weight_kg']; ?> kg<br>
-                                    <strong>Cancelled:</strong> <?php echo date('M j, Y', strtotime($parcel['updated_at'] ?? $parcel['created_at'])); ?>
+                                    <strong>Cancelled:</strong>
+                                    <?php echo date('M j, Y', strtotime($parcel['updated_at'] ?? $parcel['created_at'])); ?>
                                 </div>
                             </div>
-                            
+
                             <div class="trip-actions">
-                                <a href="track_parcel.php?tracking=<?php echo urlencode($parcel['tracking_number']); ?>" class="btn btn_primary" style="font-size: 0.9rem;">
+                                <a href="track_parcel.php?tracking=<?php echo urlencode($parcel['tracking_number']); ?>"
+                                    class="btn btn_primary" style="font-size: 0.9rem;">
                                     📱 View Details
                                 </a>
-                                
+
                                 <div style="margin-top: 0.5rem;">
-                                    <button class="btn" style="background: #6c757d; color: white; font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="alert('This parcel has been cancelled. Contact support at +94 11 123 4567 for assistance.')">
+                                    <button class="btn"
+                                        style="background: #6c757d; color: white; font-size: 0.8rem; padding: 0.4rem 0.8rem;"
+                                        onclick="alert('This parcel has been cancelled. Contact support at +94 11 123 4567 for assistance.')">
                                         📞 Contact Support
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="total-summary">
                             <div>Amount:</div>
                             <div>LKR <?php echo number_format($parcel['delivery_cost']); ?></div>
                         </div>
-                        
+
                         <!-- Cancellation Information -->
-                        <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; font-size: 0.9rem;">
+                        <div
+                            style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; font-size: 0.9rem;">
                             <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
-                                <span style="font-size: 1.2rem; margin-right: 0.5rem;"><?php echo $cancellation_status['icon']; ?></span>
+                                <span
+                                    style="font-size: 1.2rem; margin-right: 0.5rem;"><?php echo $cancellation_status['icon']; ?></span>
                                 <strong><?php echo $cancellation_status['text']; ?></strong>
                             </div>
                             <p style="margin: 0; color: #666;">
                                 <?php echo $cancellation_status['description']; ?>
                             </p>
-                            
+
                             <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #666;">
-                                <strong>💡 Note:</strong> For refund inquiries or assistance, please contact our customer support team.
+                                <strong>💡 Note:</strong> For refund inquiries or assistance, please contact our customer
+                                support team.
                             </div>
                         </div>
                     </div>
@@ -450,7 +473,7 @@ function getCancellationStatusDisplay($status) {
                 <p>Track any parcel using the tracking number and get real-time delivery updates.</p>
                 <button class="btn btn_success" onclick="showTrackingModal()">Track Parcel</button>
             </div>
-        </div>    
+        </div>
     </main>
 
     <!-- Footer -->
@@ -461,13 +484,16 @@ function getCancellationStatusDisplay($status) {
     </footer>
 
     <!-- Quick Track Modal -->
-    <div id="trackingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 8px; width: 90%; max-width: 400px;">
+    <div id="trackingModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 8px; width: 90%; max-width: 400px;">
             <h3 style="margin-bottom: 1rem;">📱 Track Parcel</h3>
             <form onsubmit="trackParcel(event)">
                 <div class="form_group">
                     <label for="tracking_input">Enter Tracking Number:</label>
-                    <input type="text" id="tracking_input" class="form_control" placeholder="e.g., PRR250123001" required>
+                    <input type="text" id="tracking_input" class="form_control" placeholder="e.g., PRR250123001"
+                        required>
                 </div>
                 <div style="display: flex; gap: 1rem;">
                     <button type="submit" class="btn btn_primary" style="flex: 1;">Track</button>
@@ -482,11 +508,11 @@ function getCancellationStatusDisplay($status) {
             // Hide all tab contents
             const contents = document.querySelectorAll('.tab_content');
             contents.forEach(content => content.classList.remove('active'));
-            
+
             // Remove active class from all tab buttons
             const buttons = document.querySelectorAll('.tab_btn');
             buttons.forEach(button => button.classList.remove('active'));
-            
+
             // Show selected tab content
             document.getElementById(tabName + '-content').classList.add('active');
             document.getElementById(tabName + '-tab').classList.add('active');
@@ -511,7 +537,7 @@ function getCancellationStatusDisplay($status) {
         }
 
         // Close modal when clicking outside
-        document.getElementById('trackingModal').addEventListener('click', function(e) {
+        document.getElementById('trackingModal').addEventListener('click', function (e) {
             if (e.target === this) {
                 hideTrackingModal();
             }
@@ -621,4 +647,5 @@ function getCancellationStatusDisplay($status) {
         }
     </style>
 </body>
+
 </html>

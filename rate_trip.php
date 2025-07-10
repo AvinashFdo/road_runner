@@ -46,14 +46,14 @@ try {
     ");
     $stmt->execute([$booking_ref, $user_id]);
     $booking_details = $stmt->fetch();
-    
+
     if (!$booking_details) {
         $error = "Booking not found.";
     } else {
         // Check if trip is completed
         $travel_datetime = strtotime($booking_details['travel_date'] . ' ' . $booking_details['departure_time']);
         $is_completed = $travel_datetime < time();
-        
+
         if (!$is_completed) {
             $error = "You can only rate completed trips.";
         } else {
@@ -69,9 +69,9 @@ try {
 
 // Handle review submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
-    $rating = (int)($_POST['rating'] ?? 0);
+    $rating = (int) ($_POST['rating'] ?? 0);
     $review_text = trim($_POST['review_text'] ?? '');
-    
+
     // Validation
     if ($rating < 1 || $rating > 5) {
         $error = "Please select a rating between 1 and 5 stars.";
@@ -92,12 +92,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
                 $stmt->execute([$booking_details['booking_id'], $user_id, $booking_details['bus_id'], $rating, $review_text]);
                 $message = "Thank you for your review!";
             }
-            
+
             // Refresh review data
             $stmt = $pdo->prepare("SELECT * FROM reviews WHERE booking_id = ? AND passenger_id = ?");
             $stmt->execute([$booking_details['booking_id'], $user_id]);
             $existing_review = $stmt->fetch();
-            
+
         } catch (PDOException $e) {
             $error = "Error submitting review: " . $e->getMessage();
         }
@@ -107,6 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -119,37 +120,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
             margin: 1rem 0;
             justify-content: center;
         }
-        
+
         .rating-star {
             font-size: 2rem;
             color: #ddd;
             cursor: pointer;
             transition: color 0.2s ease;
         }
-        
+
         .rating-star:hover,
         .rating-star.selected {
             color: #ffc107;
         }
-        
+
         .trip-info {
             background: #f8f9fa;
             padding: 2rem;
             border-radius: 8px;
             margin-bottom: 2rem;
         }
-        
+
         .trip-info h3 {
             color: #2c3e50;
             margin-bottom: 1rem;
         }
-        
+
         .info-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1rem;
         }
-        
+
         .existing-review {
             background: #e8f5e8;
             border: 1px solid #d4edda;
@@ -157,7 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
             padding: 1rem;
             margin-bottom: 1rem;
         }
-        
+
         .review-rating {
             color: #ffc107;
             font-size: 1.2rem;
@@ -165,6 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
         }
     </style>
 </head>
+
 <body>
     <!-- Header -->
     <header class="header">
@@ -202,7 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
         <?php endif; ?>
 
         <?php if ($booking_details && empty($error)): ?>
-            
+
             <!-- Trip Information -->
             <div class="trip-info">
                 <h3>🎫 Trip Details</h3>
@@ -211,7 +213,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
                         <p><strong>Route:</strong> <?php echo htmlspecialchars($booking_details['route_name']); ?></p>
                         <p><strong>From:</strong> <?php echo htmlspecialchars($booking_details['origin']); ?></p>
                         <p><strong>To:</strong> <?php echo htmlspecialchars($booking_details['destination']); ?></p>
-                        <p><strong>Travel Date:</strong> <?php echo date('D, M j, Y', strtotime($booking_details['travel_date'])); ?></p>
+                        <p><strong>Travel Date:</strong>
+                            <?php echo date('D, M j, Y', strtotime($booking_details['travel_date'])); ?></p>
                     </div>
                     <div>
                         <p><strong>Bus:</strong> <?php echo htmlspecialchars($booking_details['bus_name']); ?></p>
@@ -224,51 +227,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
 
             <!-- Existing Review -->
             <?php if ($existing_review): ?>
-            <div class="existing-review">
-                <h4>✅ Your Current Review</h4>
-                <div class="review-rating">
-                    <?php 
-                    for ($i = 1; $i <= 5; $i++) {
-                        echo $i <= $existing_review['rating'] ? '★' : '☆';
-                    }
-                    ?>
-                    (<?php echo $existing_review['rating']; ?>/5)
+                <div class="existing-review">
+                    <h4>✅ Your Current Review</h4>
+                    <div class="review-rating">
+                        <?php
+                        for ($i = 1; $i <= 5; $i++) {
+                            echo $i <= $existing_review['rating'] ? '★' : '☆';
+                        }
+                        ?>
+                        (<?php echo $existing_review['rating']; ?>/5)
+                    </div>
+                    <p><?php echo htmlspecialchars($existing_review['review_text']); ?></p>
+                    <small>Reviewed on: <?php echo date('M j, Y', strtotime($existing_review['created_at'])); ?></small>
                 </div>
-                <p><?php echo htmlspecialchars($existing_review['review_text']); ?></p>
-                <small>Reviewed on: <?php echo date('M j, Y', strtotime($existing_review['created_at'])); ?></small>
-            </div>
             <?php endif; ?>
 
             <!-- Review Form -->
             <div class="form_container">
                 <h3><?php echo $existing_review ? 'Update Your Review' : 'Write Your Review'; ?></h3>
-                
+
                 <form method="POST" id="reviewForm">
                     <!-- Rating -->
                     <div class="form_group">
                         <label>Rating: *</label>
                         <div class="rating-stars" id="ratingStars">
                             <?php for ($i = 1; $i <= 5; $i++): ?>
-                                <span class="rating-star <?php echo ($existing_review && $i <= $existing_review['rating']) ? 'selected' : ''; ?>" 
-                                      data-rating="<?php echo $i; ?>">★</span>
+                                <span
+                                    class="rating-star <?php echo ($existing_review && $i <= $existing_review['rating']) ? 'selected' : ''; ?>"
+                                    data-rating="<?php echo $i; ?>">★</span>
                             <?php endfor; ?>
                         </div>
-                        <input type="hidden" name="rating" id="ratingInput" value="<?php echo $existing_review ? $existing_review['rating'] : ''; ?>" required>
+                        <input type="hidden" name="rating" id="ratingInput"
+                            value="<?php echo $existing_review ? $existing_review['rating'] : ''; ?>" required>
                     </div>
-                    
+
                     <!-- Review Text -->
                     <div class="form_group">
                         <label for="review_text">Your Review: *</label>
-                        <textarea 
-                            id="review_text" 
-                            name="review_text" 
-                            class="form_control" 
-                            rows="5"
+                        <textarea id="review_text" name="review_text" class="form_control" rows="5"
                             placeholder="Share your experience about this trip..."
-                            required
-                        ><?php echo $existing_review ? htmlspecialchars($existing_review['review_text']) : ''; ?></textarea>
+                            required><?php echo $existing_review ? htmlspecialchars($existing_review['review_text']) : ''; ?></textarea>
                     </div>
-                    
+
                     <!-- Submit Button -->
                     <div style="text-align: center; margin-top: 2rem;">
                         <button type="submit" name="submit_review" class="btn btn_primary">
@@ -292,12 +292,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
         // Rating stars functionality
         const stars = document.querySelectorAll('.rating-star');
         const ratingInput = document.getElementById('ratingInput');
-        
+
         stars.forEach(star => {
-            star.addEventListener('click', function() {
+            star.addEventListener('click', function () {
                 const rating = parseInt(this.getAttribute('data-rating'));
                 ratingInput.value = rating;
-                
+
                 // Update star display
                 stars.forEach((s, index) => {
                     if (index < rating) {
@@ -308,18 +308,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
                 });
             });
         });
-        
+
         // Form validation
-        document.getElementById('reviewForm').addEventListener('submit', function(e) {
+        document.getElementById('reviewForm').addEventListener('submit', function (e) {
             const rating = parseInt(ratingInput.value);
             const reviewText = document.getElementById('review_text').value.trim();
-            
+
             if (!rating || rating < 1 || rating > 5) {
                 e.preventDefault();
                 alert('Please select a rating.');
                 return;
             }
-            
+
             if (reviewText.length < 10) {
                 e.preventDefault();
                 alert('Please write at least 10 characters in your review.');
@@ -328,4 +328,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
         });
     </script>
 </body>
+
 </html>

@@ -23,7 +23,7 @@ if (empty($bus_id)) {
         ");
         $stmt->execute([$bus_id]);
         $bus_info = $stmt->fetch();
-        
+
         if (!$bus_info) {
             $error = "Bus not found.";
         } else {
@@ -59,7 +59,8 @@ if ($total_reviews > 0) {
 }
 
 // Function to display star rating
-function displayStars($rating) {
+function displayStars($rating)
+{
     $stars = '';
     for ($i = 1; $i <= 5; $i++) {
         $stars .= $i <= $rating ? '★' : '☆';
@@ -70,6 +71,7 @@ function displayStars($rating) {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -83,7 +85,7 @@ function displayStars($rating) {
             border-radius: 8px;
             margin-bottom: 2rem;
         }
-        
+
         .rating-summary {
             display: flex;
             align-items: center;
@@ -93,18 +95,18 @@ function displayStars($rating) {
             background: #f8f9fa;
             border-radius: 8px;
         }
-        
+
         .rating-number {
             font-size: 3rem;
             font-weight: bold;
             color: #ffc107;
         }
-        
+
         .rating-stars {
             font-size: 1.5rem;
             color: #ffc107;
         }
-        
+
         .review-item {
             border: 1px solid #ddd;
             border-radius: 8px;
@@ -112,20 +114,20 @@ function displayStars($rating) {
             margin-bottom: 1rem;
             background: white;
         }
-        
+
         .review-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
         }
-        
+
         .reviewer-info {
             display: flex;
             align-items: center;
             gap: 1rem;
         }
-        
+
         .reviewer-avatar {
             width: 40px;
             height: 40px;
@@ -138,30 +140,30 @@ function displayStars($rating) {
             color: white;
             font-weight: bold;
         }
-        
+
         .review-rating {
             color: #ffc107;
             font-size: 1.2rem;
         }
-        
+
         .review-text {
             line-height: 1.6;
             margin-bottom: 1rem;
         }
-        
+
         .review-meta {
             font-size: 0.9rem;
             color: #666;
             border-top: 1px solid #eee;
             padding-top: 1rem;
         }
-        
+
         .no-reviews {
             text-align: center;
             padding: 3rem;
             color: #666;
         }
-        
+
         .bus-info-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -169,6 +171,7 @@ function displayStars($rating) {
         }
     </style>
 </head>
+
 <body>
     <!-- Header -->
     <header class="header">
@@ -179,7 +182,9 @@ function displayStars($rating) {
                     <li><a href="index.php">Home</a></li>
                     <li><a href="search.php">Search Buses</a></li>
                     <?php if (isset($_SESSION['user_id'])): ?>
-                        <li><a href="<?php echo $_SESSION['user_type'] === 'passenger' ? 'passenger/dashboard.php' : ($_SESSION['user_type'] === 'operator' ? 'operator/dashboard.php' : 'admin/dashboard.php'); ?>">Dashboard</a></li>
+                        <li><a
+                                href="<?php echo $_SESSION['user_type'] === 'passenger' ? 'passenger/dashboard.php' : ($_SESSION['user_type'] === 'operator' ? 'operator/dashboard.php' : 'admin/dashboard.php'); ?>">Dashboard</a>
+                        </li>
                         <li><a href="logout.php">Logout</a></li>
                     <?php else: ?>
                         <li><a href="login.php">Login</a></li>
@@ -196,7 +201,7 @@ function displayStars($rating) {
                 <?php echo htmlspecialchars($error); ?>
             </div>
         <?php else: ?>
-            
+
             <!-- Bus Information -->
             <div class="bus-header">
                 <h2 style="margin-bottom: 1rem;">🚌 <?php echo htmlspecialchars($bus_info['bus_name']); ?></h2>
@@ -231,7 +236,7 @@ function displayStars($rating) {
             <!-- Reviews List -->
             <div class="reviews-container">
                 <h3 style="margin-bottom: 1rem;">Customer Reviews</h3>
-                
+
                 <?php if ($total_reviews > 0): ?>
                     <?php foreach ($reviews as $review): ?>
                         <div class="review-item">
@@ -241,7 +246,8 @@ function displayStars($rating) {
                                         <?php echo strtoupper(substr($review['reviewer_name'], 0, 1)); ?>
                                     </div>
                                     <div>
-                                        <div style="font-weight: bold;"><?php echo htmlspecialchars($review['reviewer_name']); ?></div>
+                                        <div style="font-weight: bold;"><?php echo htmlspecialchars($review['reviewer_name']); ?>
+                                        </div>
                                         <div style="font-size: 0.9rem; color: #666;">
                                             <?php echo date('M j, Y', strtotime($review['created_at'])); ?>
                                         </div>
@@ -252,19 +258,20 @@ function displayStars($rating) {
                                     <span style="font-weight: bold; margin-left: 0.5rem;"><?php echo $review['rating']; ?>/5</span>
                                 </div>
                             </div>
-                            
+
                             <div class="review-text">
                                 <?php echo nl2br(htmlspecialchars($review['review_text'])); ?>
                             </div>
-                            
+
                             <div class="review-meta">
-                                <strong>Trip:</strong> <?php echo htmlspecialchars($review['route_name']); ?> 
-                                (<?php echo htmlspecialchars($review['origin']); ?> → <?php echo htmlspecialchars($review['destination']); ?>)
+                                <strong>Trip:</strong> <?php echo htmlspecialchars($review['route_name']); ?>
+                                (<?php echo htmlspecialchars($review['origin']); ?> →
+                                <?php echo htmlspecialchars($review['destination']); ?>)
                                 • Travel Date: <?php echo date('M j, Y', strtotime($review['travel_date'])); ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
-                    
+
                 <?php else: ?>
                     <div class="no-reviews">
                         <h3>No Reviews Yet</h3>
@@ -284,4 +291,5 @@ function displayStars($rating) {
         </div>
     </footer>
 </body>
+
 </html>

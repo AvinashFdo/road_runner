@@ -11,12 +11,14 @@ $user_type = $is_logged_in ? $_SESSION['user_type'] : '';
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Road Runner - Online Bus Booking</title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
+
 <body>
     <!-- Header and Navigation -->
     <header class="header">
@@ -54,12 +56,12 @@ $user_type = $is_logged_in ? $_SESSION['user_type'] : '';
         <?php if ($is_logged_in): ?>
             <div class="container" style="padding: 20px 0;">
                 <div class="user_info">
-                    Welcome back, <?php echo htmlspecialchars($user_name); ?>! 
+                    Welcome back, <?php echo htmlspecialchars($user_name); ?>!
                     (<?php echo ucfirst($user_type); ?>)
                 </div>
             </div>
         <?php endif; ?>
-        
+
         <?php if (isset($_GET['logout']) && $_GET['logout'] === 'success'): ?>
             <div class="container" style="padding: 20px 0;">
                 <div class="alert alert_success">
@@ -89,12 +91,14 @@ $user_type = $is_logged_in ? $_SESSION['user_type'] : '';
                     <div class="feature_card">
                         <div class="feature_icon">🎯</div>
                         <h3>Smart Seat Selection</h3>
-                        <p>Our unique gender-based seat visualization helps you choose seats with comfort and privacy in mind.</p>
+                        <p>Our unique gender-based seat visualization helps you choose seats with comfort and privacy in
+                            mind.</p>
                     </div>
                     <div class="feature_card">
                         <div class="feature_icon">⚡</div>
                         <h3>Quick Booking</h3>
-                        <p>Book your tickets in minutes with our streamlined booking process and instant confirmation.</p>
+                        <p>Book your tickets in minutes with our streamlined booking process and instant confirmation.
+                        </p>
                     </div>
                     <div class="feature_card">
                         <div class="feature_icon">🔒</div>
@@ -128,4 +132,5 @@ $user_type = $is_logged_in ? $_SESSION['user_type'] : '';
         </div>
     </footer>
 </body>
+
 </html>

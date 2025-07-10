@@ -16,13 +16,13 @@ $error = '';
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
-    
+
     if ($action === 'update_profile') {
         // Update basic profile information
         $full_name = trim($_POST['full_name'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
-        
+
         // Validation
         if (empty($full_name)) {
             $error = "Full name is required.";
@@ -45,25 +45,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Update profile
                     $stmt = $pdo->prepare("UPDATE users SET full_name = ?, email = ?, phone = ? WHERE user_id = ?");
                     $stmt->execute([$full_name, $email, $phone, $user_id]);
-                    
+
                     // Update session data
                     $_SESSION['user_name'] = $full_name;
                     $_SESSION['user_email'] = $email;
-                    
+
                     $message = "Profile updated successfully!";
                 }
             } catch (PDOException $e) {
                 $error = "Error updating profile: " . $e->getMessage();
             }
         }
-    }
-    
-    elseif ($action === 'change_password') {
+    } elseif ($action === 'change_password') {
         // Change password
         $current_password = $_POST['current_password'] ?? '';
         $new_password = $_POST['new_password'] ?? '';
         $confirm_password = $_POST['confirm_password'] ?? '';
-        
+
         // Validation
         if (empty($current_password)) {
             $error = "Current password is required.";
@@ -79,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $pdo->prepare("SELECT password FROM users WHERE user_id = ?");
                 $stmt->execute([$user_id]);
                 $user = $stmt->fetch();
-                
+
                 if (!$user || !password_verify($current_password, $user['password'])) {
                     $error = "Current password is incorrect.";
                 } else {
@@ -87,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
                     $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE user_id = ?");
                     $stmt->execute([$hashed_password, $user_id]);
-                    
+
                     $message = "Password changed successfully!";
                 }
             } catch (PDOException $e) {
@@ -102,7 +100,7 @@ try {
     $stmt = $pdo->prepare("SELECT full_name, email, phone, created_at FROM users WHERE user_id = ?");
     $stmt->execute([$user_id]);
     $user_info = $stmt->fetch();
-    
+
     if (!$user_info) {
         header('Location: ../logout.php');
         exit();
@@ -114,12 +112,14 @@ try {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Profile - Road Runner</title>
     <link rel="stylesheet" href="../assets/css/style.css">
 </head>
+
 <body>
     <!-- Header -->
     <header class="header">
@@ -172,58 +172,42 @@ try {
         <div id="profile-content" class="tab_content active">
             <div class="form_container">
                 <h3>Personal Information</h3>
-                <p style="color: #666; margin-bottom: 2rem;">Update your personal details below. Changes will be reflected across all your bookings.</p>
-                
+                <p style="color: #666; margin-bottom: 2rem;">Update your personal details below. Changes will be
+                    reflected across all your bookings.</p>
+
                 <?php if ($user_info): ?>
                     <form method="POST" action="edit_profile.php">
                         <input type="hidden" name="action" value="update_profile">
-                        
+
                         <div class="form_group">
                             <label for="full_name">Full Name:</label>
-                            <input 
-                                type="text" 
-                                id="full_name" 
-                                name="full_name" 
-                                class="form_control" 
-                                value="<?php echo htmlspecialchars($user_info['full_name']); ?>"
-                                required
-                            >
+                            <input type="text" id="full_name" name="full_name" class="form_control"
+                                value="<?php echo htmlspecialchars($user_info['full_name']); ?>" required>
                         </div>
-                        
+
                         <div class="form_group">
                             <label for="email">Email Address:</label>
-                            <input 
-                                type="email" 
-                                id="email" 
-                                name="email" 
-                                class="form_control" 
-                                value="<?php echo htmlspecialchars($user_info['email']); ?>"
-                                required
-                            >
-                            <small style="color: #666;">This email is used for booking confirmations and important updates.</small>
+                            <input type="email" id="email" name="email" class="form_control"
+                                value="<?php echo htmlspecialchars($user_info['email']); ?>" required>
+                            <small style="color: #666;">This email is used for booking confirmations and important
+                                updates.</small>
                         </div>
-                        
+
                         <div class="form_group">
                             <label for="phone">Phone Number:</label>
-                            <input 
-                                type="tel" 
-                                id="phone" 
-                                name="phone" 
-                                class="form_control" 
-                                value="<?php echo htmlspecialchars($user_info['phone']); ?>"
-                                placeholder="0771234567"
-                                pattern="[0-9]{10}"
-                                required
-                            >
-                            <small style="color: #666;">10-digit phone number for booking confirmations and operator contact.</small>
+                            <input type="tel" id="phone" name="phone" class="form_control"
+                                value="<?php echo htmlspecialchars($user_info['phone']); ?>" placeholder="0771234567"
+                                pattern="[0-9]{10}" required>
+                            <small style="color: #666;">10-digit phone number for booking confirmations and operator
+                                contact.</small>
                         </div>
-                        
+
                         <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem;">
                             <button type="submit" class="btn btn_primary">Update Profile</button>
                             <a href="dashboard.php" class="btn" style="background: #95a5a6;">Cancel</a>
                         </div>
                     </form>
-                    
+
                     <!-- Account Information -->
                     <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-top: 2rem;">
                         <h4 style="color: #2c3e50; margin-bottom: 1rem;">Account Information</h4>
@@ -247,46 +231,29 @@ try {
             <div class="form_container">
                 <h3>Change Password</h3>
                 <p style="color: #666; margin-bottom: 2rem;">Choose a strong password to keep your account secure.</p>
-                
+
                 <form method="POST" action="edit_profile.php">
                     <input type="hidden" name="action" value="change_password">
-                    
+
                     <div class="form_group">
                         <label for="current_password">Current Password:</label>
-                        <input 
-                            type="password" 
-                            id="current_password" 
-                            name="current_password" 
-                            class="form_control" 
-                            required
-                        >
+                        <input type="password" id="current_password" name="current_password" class="form_control"
+                            required>
                     </div>
-                    
+
                     <div class="form_group">
                         <label for="new_password">New Password:</label>
-                        <input 
-                            type="password" 
-                            id="new_password" 
-                            name="new_password" 
-                            class="form_control" 
-                            minlength="6"
-                            required
-                        >
+                        <input type="password" id="new_password" name="new_password" class="form_control" minlength="6"
+                            required>
                         <small style="color: #666;">Must be at least 6 characters long.</small>
                     </div>
-                    
+
                     <div class="form_group">
                         <label for="confirm_password">Confirm New Password:</label>
-                        <input 
-                            type="password" 
-                            id="confirm_password" 
-                            name="confirm_password" 
-                            class="form_control" 
-                            minlength="6"
-                            required
-                        >
+                        <input type="password" id="confirm_password" name="confirm_password" class="form_control"
+                            minlength="6" required>
                     </div>
-                    
+
                     <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem;">
                         <button type="submit" class="btn btn_primary">Change Password</button>
                         <button type="reset" class="btn" style="background: #95a5a6;">Clear Form</button>
@@ -320,21 +287,21 @@ try {
             // Hide all tab contents
             const contents = document.querySelectorAll('.tab_content');
             contents.forEach(content => content.classList.remove('active'));
-            
+
             // Remove active class from all tab buttons
             const buttons = document.querySelectorAll('.tab_btn');
             buttons.forEach(button => button.classList.remove('active'));
-            
+
             // Show selected tab content
             document.getElementById(tabName + '-content').classList.add('active');
             document.getElementById(tabName + '-tab').classList.add('active');
         }
 
         // Password confirmation validation
-        document.getElementById('confirm_password').addEventListener('input', function() {
+        document.getElementById('confirm_password').addEventListener('input', function () {
             const newPassword = document.getElementById('new_password').value;
             const confirmPassword = this.value;
-            
+
             if (newPassword !== confirmPassword) {
                 this.setCustomValidity('Passwords do not match');
             } else {
@@ -343,7 +310,7 @@ try {
         });
 
         // Real-time password validation
-        document.getElementById('new_password').addEventListener('input', function() {
+        document.getElementById('new_password').addEventListener('input', function () {
             const confirmPassword = document.getElementById('confirm_password');
             if (confirmPassword.value && this.value !== confirmPassword.value) {
                 confirmPassword.setCustomValidity('Passwords do not match');
@@ -353,4 +320,5 @@ try {
         });
     </script>
 </body>
+
 </html>

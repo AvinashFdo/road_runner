@@ -43,28 +43,29 @@ try {
         ");
         $stmt->execute([$booking_ref, $_SESSION['user_id']]);
         $booking = $stmt->fetch();
-        
+
         if ($booking) {
             $bookings[] = $booking;
             $total_amount += $booking['total_amount'];
-            
+
             if (!$trip_info) {
                 $trip_info = $booking;
             }
         }
     }
-    
+
     if (empty($bookings)) {
         header('Location: search_buses.php');
         exit();
     }
-    
+
 } catch (PDOException $e) {
     $error = "Error loading booking details: " . $e->getMessage();
 }
 
 // Generate ticket content for download
-function generateTicketContent($bookings, $trip_info) {
+function generateTicketContent($bookings, $trip_info)
+{
     $content = "ROAD RUNNER - BUS TICKETS\n\n";
     $content .= "========================================\n";
     $content .= "TRIP INFORMATION\n";
@@ -74,11 +75,11 @@ function generateTicketContent($bookings, $trip_info) {
     $content .= "To: " . $trip_info['destination'] . "\n";
     $content .= "Date: " . date('D, M j, Y', strtotime($trip_info['travel_date'])) . "\n";
     $content .= "Departure: " . date('g:i A', strtotime($trip_info['departure_time'])) . "\n";
-    
+
     if ($trip_info['arrival_time']) {
         $content .= "Arrival: " . date('g:i A', strtotime($trip_info['arrival_time'])) . "\n";
     }
-    
+
     $content .= "\n========================================\n";
     $content .= "BUS DETAILS\n";
     $content .= "========================================\n";
@@ -86,15 +87,15 @@ function generateTicketContent($bookings, $trip_info) {
     $content .= "Type: " . $trip_info['bus_type'] . "\n";
     $content .= "Operator: " . $trip_info['operator_name'] . "\n";
     $content .= "Contact: " . $trip_info['operator_phone'] . "\n";
-    
+
     if ($trip_info['amenities']) {
         $content .= "Amenities: " . $trip_info['amenities'] . "\n";
     }
-    
+
     $content .= "\n========================================\n";
     $content .= "PASSENGERS & SEATS\n";
     $content .= "========================================\n";
-    
+
     $total = 0;
     foreach ($bookings as $index => $booking) {
         $content .= "\nPassenger " . ($index + 1) . ":\n";
@@ -105,7 +106,7 @@ function generateTicketContent($bookings, $trip_info) {
         $content .= "  Amount: LKR " . number_format($booking['total_amount']) . "\n";
         $total += $booking['total_amount'];
     }
-    
+
     $content .= "\n========================================\n";
     $content .= "PAYMENT SUMMARY\n";
     $content .= "========================================\n";
@@ -113,7 +114,7 @@ function generateTicketContent($bookings, $trip_info) {
     $content .= "Total Amount: LKR " . number_format($total) . "\n";
     $content .= "Payment Status: " . ucfirst($bookings[0]['payment_status']) . "\n";
     $content .= "Booking Date: " . date('M j, Y g:i A', strtotime($bookings[0]['booking_date'])) . "\n";
-    
+
     $content .= "\n========================================\n";
     $content .= "IMPORTANT NOTES\n";
     $content .= "========================================\n";
@@ -123,7 +124,7 @@ function generateTicketContent($bookings, $trip_info) {
     $content .= "• Contact operator for any changes\n";
     $content .= "\nThank you for choosing Road Runner!\n";
     $content .= "========================================\n";
-    
+
     return $content;
 }
 
@@ -131,7 +132,7 @@ function generateTicketContent($bookings, $trip_info) {
 if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
     $filename = 'RoadRunner_Tickets_' . date('Ymd_His') . '.txt';
     $content = generateTicketContent($bookings, $trip_info);
-    
+
     header('Content-Type: text/plain; charset=utf-8');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Content-Length: ' . strlen($content));
@@ -142,12 +143,14 @@ if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Booking Confirmed - Road Runner</title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
+
 <body>
     <!-- Header -->
     <header class="header">
@@ -171,7 +174,7 @@ if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
         <?php if (isset($error)): ?>
             <div class="alert alert_error"><?php echo htmlspecialchars($error); ?></div>
         <?php else: ?>
-            
+
             <!-- Success Message -->
             <div class="alert alert_success mb_2">
                 <h2>🎉 Booking Confirmed!</h2>
@@ -190,17 +193,21 @@ if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
                             <p><strong>To:</strong> <?php echo htmlspecialchars($trip_info['destination']); ?></p>
                             <p><strong>Distance:</strong> <?php echo $trip_info['distance_km']; ?> km</p>
                         </div>
-                        
+
                         <div>
                             <h4 style="color: #2c3e50; margin-bottom: 1rem;">Schedule</h4>
-                            <p><strong>Date:</strong> <?php echo date('D, M j, Y', strtotime($trip_info['travel_date'])); ?></p>
-                            <p><strong>Departure:</strong> <?php echo date('g:i A', strtotime($trip_info['departure_time'])); ?></p>
+                            <p><strong>Date:</strong> <?php echo date('D, M j, Y', strtotime($trip_info['travel_date'])); ?>
+                            </p>
+                            <p><strong>Departure:</strong>
+                                <?php echo date('g:i A', strtotime($trip_info['departure_time'])); ?></p>
                             <?php if ($trip_info['arrival_time']): ?>
-                                <p><strong>Arrival:</strong> <?php echo date('g:i A', strtotime($trip_info['arrival_time'])); ?></p>
+                                <p><strong>Arrival:</strong> <?php echo date('g:i A', strtotime($trip_info['arrival_time'])); ?>
+                                </p>
                             <?php endif; ?>
-                            <p><strong>Booked:</strong> <?php echo date('M j, Y g:i A', strtotime($trip_info['booking_date'])); ?></p>
+                            <p><strong>Booked:</strong>
+                                <?php echo date('M j, Y g:i A', strtotime($trip_info['booking_date'])); ?></p>
                         </div>
-                        
+
                         <div>
                             <h4 style="color: #2c3e50; margin-bottom: 1rem;">Bus</h4>
                             <p><strong>Bus:</strong> <?php echo htmlspecialchars($trip_info['bus_name']); ?></p>
@@ -232,7 +239,8 @@ if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
                             <tr>
                                 <td><strong><?php echo htmlspecialchars($booking['passenger_name']); ?></strong></td>
                                 <td>
-                                    <span style="background: #4caf50; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold;">
+                                    <span
+                                        style="background: #4caf50; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold;">
                                         <?php echo htmlspecialchars($booking['seat_number']); ?>
                                     </span>
                                 </td>
@@ -243,8 +251,8 @@ if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
                                 </td>
                                 <td>
                                     <code style="background: #f5f5f5; padding: 0.25rem 0.5rem; border-radius: 4px;">
-                                        <?php echo $booking['booking_reference']; ?>
-                                    </code>
+                                                <?php echo $booking['booking_reference']; ?>
+                                            </code>
                                 </td>
                                 <td><strong>LKR <?php echo number_format($booking['total_amount']); ?></strong></td>
                                 <td>
@@ -278,16 +286,18 @@ if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
                             </span>
                         </div>
                         <p style="color: #666; margin-top: 0.5rem;">
-                            Payment Status: <span class="badge badge_operator"><?php echo ucfirst($bookings[0]['payment_status']); ?></span>
+                            Payment Status: <span
+                                class="badge badge_operator"><?php echo ucfirst($bookings[0]['payment_status']); ?></span>
                         </p>
                     </div>
                 </div>
             </div>
 
             <!-- Action Buttons -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0;">
-                <a href="?booking_refs=<?php echo urlencode(implode(',', $booking_references)); ?>&download=ticket" 
-                   class="btn btn_primary" style="text-align: center;">
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0;">
+                <a href="?booking_refs=<?php echo urlencode(implode(',', $booking_references)); ?>&download=ticket"
+                    class="btn btn_primary" style="text-align: center;">
                     📄 Download Tickets
                 </a>
                 <button onclick="window.print()" class="btn btn_success" style="text-align: center;">
@@ -301,7 +311,7 @@ if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
                 </a>
             </div>
 
-            
+
         <?php endif; ?>
     </main>
 
@@ -313,13 +323,13 @@ if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
 
     <script>
         // Copy booking reference to clipboard
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const bookingRef = document.querySelector('div[style*="font-family: monospace"]');
             if (bookingRef) {
                 bookingRef.style.cursor = 'pointer';
                 bookingRef.title = 'Click to copy booking reference';
-                bookingRef.addEventListener('click', function() {
-                    navigator.clipboard.writeText(this.textContent.trim()).then(function() {
+                bookingRef.addEventListener('click', function () {
+                    navigator.clipboard.writeText(this.textContent.trim()).then(function () {
                         alert('Booking reference copied to clipboard!');
                     });
                 });
@@ -330,31 +340,39 @@ if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
     <style>
         /* Print styles */
         @media print {
-            .header, .footer, .btn, button, .alert:not(.alert_success):not(.alert_info) {
+
+            .header,
+            .footer,
+            .btn,
+            button,
+            .alert:not(.alert_success):not(.alert_info) {
                 display: none !important;
             }
-            
+
             .container {
                 max-width: none !important;
                 margin: 0 !important;
                 padding: 0 !important;
             }
-            
+
             .table_container {
                 border: 1px solid #333 !important;
                 margin-bottom: 1rem !important;
                 page-break-inside: avoid;
             }
-            
+
             body {
                 font-size: 12pt !important;
                 line-height: 1.4 !important;
             }
-            
-            h2, h3, h4 {
+
+            h2,
+            h3,
+            h4 {
                 color: #000 !important;
             }
         }
     </style>
 </body>
+
 </html>

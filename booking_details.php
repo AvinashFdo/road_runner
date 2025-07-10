@@ -42,7 +42,7 @@ try {
     ");
     $stmt->execute([$booking_reference, $user_id]);
     $booking_details = $stmt->fetch();
-    
+
     if (!$booking_details) {
         $error = "Booking not found or you don't have permission to view it.";
     } else {
@@ -61,61 +61,63 @@ try {
             ORDER BY b.booking_reference ASC
         ");
         $stmt->execute([
-            $user_id, 
-            $booking_details['schedule_id'], 
+            $user_id,
+            $booking_details['schedule_id'],
             $booking_details['travel_date'],
             $booking_details['booking_date']
         ]);
         $all_trip_bookings = $stmt->fetchAll();
-        
+
         // Calculate total amount for the trip
         $total_trip_amount = array_sum(array_column($all_trip_bookings, 'total_amount'));
     }
-    
+
 } catch (PDOException $e) {
     $error = "Error retrieving booking details: " . $e->getMessage();
 }
 
 // Function to get horizontal seat number
-function getHorizontalSeatNumber($seatNumber, $busId, $pdo) {
+function getHorizontalSeatNumber($seatNumber, $busId, $pdo)
+{
     try {
         // If seat number is already a simple number, just return it
         if (is_numeric($seatNumber)) {
-            return (int)$seatNumber;
+            return (int) $seatNumber;
         }
-        
+
         // If it's in letter format (A1, B2, etc.), convert it
         if (preg_match('/^([A-Z])(\d+)$/', $seatNumber, $matches)) {
             $seatLetter = $matches[1];
-            $seatRowNum = (int)$matches[2];
-            
+            $seatRowNum = (int) $matches[2];
+
             // Get bus seat configuration
             $stmt = $pdo->prepare("SELECT seat_configuration FROM buses WHERE bus_id = ?");
             $stmt->execute([$busId]);
             $seatConfig = $stmt->fetch()['seat_configuration'] ?? '2x2';
-            
+
             // Parse configuration
             $config = explode('x', $seatConfig);
-            $leftSeats = (int)$config[0];
-            $rightSeats = (int)$config[1];
+            $leftSeats = (int) $config[0];
+            $rightSeats = (int) $config[1];
             $seatsPerRow = $leftSeats + $rightSeats;
-            
+
             $positionInRow = ord($seatLetter) - ord('A');
             $horizontalNumber = (($seatRowNum - 1) * $seatsPerRow) + $positionInRow + 1;
-            
+
             return $horizontalNumber;
         }
-        
+
         // If it's neither format, just return as-is
         return $seatNumber;
-        
+
     } catch (PDOException $e) {
         return $seatNumber;
     }
 }
 
 // Function to get booking status display
-function getBookingStatusInfo($status) {
+function getBookingStatusInfo($status)
+{
     switch ($status) {
         case 'pending':
             return ['text' => 'Pending Confirmation', 'class' => 'badge_operator', 'icon' => '⏳'];
@@ -133,7 +135,8 @@ function getBookingStatusInfo($status) {
 }
 
 // Generate booking receipt text
-function generateBookingReceipt($booking) {
+function generateBookingReceipt($booking)
+{
     $content = "ROAD RUNNER - BUS BOOKING RECEIPT\n\n";
     $content .= "=====================================\n";
     $content .= "BOOKING INFORMATION\n";
@@ -142,7 +145,7 @@ function generateBookingReceipt($booking) {
     $content .= "Booking Date: " . date('F j, Y \a\t g:i A', strtotime($booking['booking_date'])) . "\n";
     $content .= "Status: " . ucfirst($booking['booking_status']) . "\n";
     $content .= "Payment Status: " . ucfirst($booking['payment_status']) . "\n";
-    
+
     $content .= "\n=====================================\n";
     $content .= "TRIP DETAILS\n";
     $content .= "=====================================\n";
@@ -155,7 +158,7 @@ function generateBookingReceipt($booking) {
         $content .= "Arrival Time: " . date('g:i A', strtotime($booking['arrival_time'])) . "\n";
     }
     $content .= "Distance: " . $booking['distance_km'] . " km\n";
-    
+
     $content .= "\n=====================================\n";
     $content .= "BUS INFORMATION\n";
     $content .= "=====================================\n";
@@ -165,27 +168,27 @@ function generateBookingReceipt($booking) {
     if ($booking['amenities']) {
         $content .= "Amenities: " . $booking['amenities'] . "\n";
     }
-    
+
     $content .= "\n=====================================\n";
     $content .= "PASSENGER DETAILS\n";
     $content .= "=====================================\n";
     $content .= "Name: " . $booking['passenger_name'] . "\n";
     $content .= "Gender: " . ucfirst($booking['passenger_gender']) . "\n";
     $content .= "Seat Number: " . $booking['seat_number'] . "\n";
-    
+
     $content .= "\n=====================================\n";
     $content .= "OPERATOR CONTACT\n";
     $content .= "=====================================\n";
     $content .= "Operator: " . $booking['operator_name'] . "\n";
     $content .= "Phone: " . $booking['operator_phone'] . "\n";
     $content .= "Email: " . $booking['operator_email'] . "\n";
-    
+
     $content .= "\n=====================================\n";
     $content .= "PAYMENT INFORMATION\n";
     $content .= "=====================================\n";
     $content .= "Total Amount: LKR " . number_format($booking['total_amount'], 2) . "\n";
     $content .= "Payment Status: " . ucfirst($booking['payment_status']) . "\n";
-    
+
     $content .= "\n=====================================\n";
     $content .= "IMPORTANT INFORMATION\n";
     $content .= "=====================================\n";
@@ -194,7 +197,7 @@ function generateBookingReceipt($booking) {
     $content .= "• Contact operator for any schedule changes\n";
     $content .= "• Cancellation allowed up to 2 hours before departure\n";
     $content .= "• Keep this receipt for your records\n";
-    
+
     $content .= "\n=====================================\n";
     $content .= "CONTACT INFORMATION\n";
     $content .= "=====================================\n";
@@ -202,12 +205,12 @@ function generateBookingReceipt($booking) {
     $content .= "Phone: +94 11 123 4567\n";
     $content .= "Email: support@roadrunner.lk\n";
     $content .= "Website: www.roadrunner.lk\n";
-    
+
     $content .= "\n=====================================\n";
     $content .= "Thank you for choosing Road Runner!\n";
     $content .= "Have a safe journey!\n";
     $content .= "=====================================\n";
-    
+
     return $content;
 }
 
@@ -215,7 +218,7 @@ function generateBookingReceipt($booking) {
 if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_details) {
     $filename = 'RoadRunner_Booking_' . $booking_reference . '_' . date('Ymd_His') . '.txt';
     $content = generateBookingReceipt($booking_details);
-    
+
     header('Content-Type: text/plain; charset=utf-8');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Content-Length: ' . strlen($content));
@@ -226,12 +229,14 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Booking Details - Road Runner</title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
+
 <body>
     <!-- Header -->
     <header class="header">
@@ -269,15 +274,16 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
             </div>
         <?php else: ?>
             <?php $status_info = getBookingStatusInfo($booking_details['booking_status']); ?>
-            
+
             <!-- Booking Status Banner -->
-            <div class="alert alert_<?php echo $booking_details['booking_status'] === 'confirmed' || $booking_details['booking_status'] === 'completed' ? 'success' : ($booking_details['booking_status'] === 'cancelled' ? 'error' : 'info'); ?> mb_2">
+            <div
+                class="alert alert_<?php echo $booking_details['booking_status'] === 'confirmed' || $booking_details['booking_status'] === 'completed' ? 'success' : ($booking_details['booking_status'] === 'cancelled' ? 'error' : 'info'); ?> mb_2">
                 <h3 style="margin-bottom: 0.5rem;">
-                    <?php echo $status_info['icon']; ?> <?php echo $status_info['text']; ?>
+                    <?php echo $status_info['icon']; ?>     <?php echo $status_info['text']; ?>
                 </h3>
                 <p style="font-size: 1.1rem; margin: 0;">
-                    <?php 
-                    switch($booking_details['booking_status']) {
+                    <?php
+                    switch ($booking_details['booking_status']) {
                         case 'confirmed':
                             echo 'Your booking is confirmed. Have a safe journey!';
                             break;
@@ -303,7 +309,8 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
                 <h3 class="p_1 mb_1">🎫 Booking Information</h3>
                 <div class="p_2">
                     <div style="text-align: center; margin-bottom: 2rem;">
-                        <div style="background: #2c3e50; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <div
+                            style="background: #2c3e50; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
                             <h3 style="margin-bottom: 0.5rem;">Booking Reference</h3>
                             <div style="font-size: 2rem; font-weight: bold; letter-spacing: 2px; font-family: monospace;">
                                 <?php echo htmlspecialchars($booking_details['booking_reference']); ?>
@@ -312,7 +319,7 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
                                 Keep this reference for your records
                             </p>
                         </div>
-                        
+
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                             <div>
                                 <strong>📅 Booking Date:</strong><br>
@@ -330,7 +337,9 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
                             </div>
                             <div>
                                 <strong>💳 Payment:</strong><br>
-                                <span class="badge <?php echo $booking_details['payment_status'] === 'paid' ? 'badge_active' : 'badge_operator'; ?>" style="font-size: 0.9rem;">
+                                <span
+                                    class="badge <?php echo $booking_details['payment_status'] === 'paid' ? 'badge_active' : 'badge_operator'; ?>"
+                                    style="font-size: 0.9rem;">
                                     <?php echo ucfirst($booking_details['payment_status']); ?>
                                 </span>
                             </div>
@@ -349,16 +358,20 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
                             <p><strong>Route:</strong> <?php echo htmlspecialchars($booking_details['route_name']); ?></p>
                             <p><strong>From:</strong> <?php echo htmlspecialchars($booking_details['origin']); ?></p>
                             <p><strong>To:</strong> <?php echo htmlspecialchars($booking_details['destination']); ?></p>
-                            <p><strong>Distance:</strong> <?php echo htmlspecialchars($booking_details['distance_km']); ?> km</p>
+                            <p><strong>Distance:</strong> <?php echo htmlspecialchars($booking_details['distance_km']); ?>
+                                km</p>
                         </div>
-                        
+
                         <div>
                             <h4 style="color: #2c3e50; margin-bottom: 1rem;">Schedule</h4>
-                            <p><strong>Departure:</strong> <?php echo date('g:i A', strtotime($booking_details['departure_time'])); ?></p>
+                            <p><strong>Departure:</strong>
+                                <?php echo date('g:i A', strtotime($booking_details['departure_time'])); ?></p>
                             <?php if ($booking_details['arrival_time']): ?>
-                                <p><strong>Arrival:</strong> <?php echo date('g:i A', strtotime($booking_details['arrival_time'])); ?></p>
+                                <p><strong>Arrival:</strong>
+                                    <?php echo date('g:i A', strtotime($booking_details['arrival_time'])); ?></p>
                             <?php endif; ?>
-                            <p><strong>Travel Date:</strong> <?php echo date('D, M j, Y', strtotime($booking_details['travel_date'])); ?></p>
+                            <p><strong>Travel Date:</strong>
+                                <?php echo date('D, M j, Y', strtotime($booking_details['travel_date'])); ?></p>
                         </div>
                     </div>
                 </div>
@@ -366,7 +379,7 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
 
             <!-- Passenger Information -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem 0;">
-                
+
                 <!-- Bus Information -->
                 <div class="table_container">
                     <h3 class="p_1 mb_1">🚌 Bus Information</h3>
@@ -385,8 +398,8 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
                     <h3 class="p_1 mb_1">🎫 Trip Summary</h3>
                     <div class="p_2">
                         <p><strong>Total Passengers:</strong> <?php echo count($all_trip_bookings); ?></p>
-                        <p><strong>Seats:</strong> 
-                            <?php 
+                        <p><strong>Seats:</strong>
+                            <?php
                             $seats = [];
                             foreach ($all_trip_bookings as $trip_booking) {
                                 $seats[] = $trip_booking['seat_number'];
@@ -394,7 +407,7 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
                             echo implode(', ', $seats);
                             ?>
                         </p>
-                        <p><strong>Total Amount:</strong> 
+                        <p><strong>Total Amount:</strong>
                             <span style="font-size: 1.2rem; color: #2c3e50; font-weight: bold;">
                                 LKR <?php echo number_format($total_trip_amount); ?>
                             </span>
@@ -427,12 +440,14 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
                                     </td>
                                     <td><?php echo htmlspecialchars($trip_booking['passenger_name']); ?></td>
                                     <td>
-                                        <span class="badge" style="background: <?php echo $trip_booking['passenger_gender'] === 'male' ? '#007bff' : '#dc3545'; ?>; color: white;">
+                                        <span class="badge"
+                                            style="background: <?php echo $trip_booking['passenger_gender'] === 'male' ? '#007bff' : '#dc3545'; ?>; color: white;">
                                             <?php echo ucfirst($trip_booking['passenger_gender']); ?>
                                         </span>
                                     </td>
                                     <td>
-                                        <span style="background: #f5f5f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold;">
+                                        <span
+                                            style="background: #f5f5f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold;">
                                             <?php echo htmlspecialchars($trip_booking['seat_number']); ?>
                                         </span>
                                     </td>
@@ -480,16 +495,19 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
                 <div class="p_2">
                     <div style="display: grid; grid-template-columns: 1fr auto; gap: 2rem; align-items: center;">
                         <div>
-                            <p><strong>Trip Total Amount:</strong> 
+                            <p><strong>Trip Total Amount:</strong>
                                 <span style="font-size: 1.3rem; color: #2c3e50; font-weight: bold;">
                                     LKR <?php echo number_format($total_trip_amount); ?>
                                 </span>
                                 <small style="display: block; color: #666; margin-top: 0.25rem;">
-                                    (<?php echo count($all_trip_bookings); ?> passenger<?php echo count($all_trip_bookings) > 1 ? 's' : ''; ?> × LKR <?php echo number_format($booking_details['total_amount']); ?> each)
+                                    (<?php echo count($all_trip_bookings); ?>
+                                    passenger<?php echo count($all_trip_bookings) > 1 ? 's' : ''; ?> × LKR
+                                    <?php echo number_format($booking_details['total_amount']); ?> each)
                                 </small>
                             </p>
-                            <p><strong>Payment Status:</strong> 
-                                <span class="badge <?php echo $booking_details['payment_status'] === 'paid' ? 'badge_active' : 'badge_operator'; ?>">
+                            <p><strong>Payment Status:</strong>
+                                <span
+                                    class="badge <?php echo $booking_details['payment_status'] === 'paid' ? 'badge_active' : 'badge_operator'; ?>">
                                     <?php echo ucfirst($booking_details['payment_status']); ?>
                                 </span>
                             </p>
@@ -499,9 +517,10 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
             </div>
 
             <!-- Action Buttons -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0;">
-                <a href="?ref=<?php echo urlencode($booking_reference); ?>&download=receipt" 
-                   class="btn btn_primary" style="text-align: center;">
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0;">
+                <a href="?ref=<?php echo urlencode($booking_reference); ?>&download=receipt" class="btn btn_primary"
+                    style="text-align: center;">
                     📄 Download Receipt
                 </a>
                 <button onclick="window.print()" class="btn btn_success" style="text-align: center;">
@@ -515,7 +534,7 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
                 </a>
             </div>
 
-           
+
 
         <?php endif; ?>
     </main>
@@ -529,13 +548,13 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
 
     <script>
         // Copy booking reference to clipboard
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const bookingRef = document.querySelector('div[style*="font-family: monospace"]');
             if (bookingRef) {
                 bookingRef.style.cursor = 'pointer';
                 bookingRef.title = 'Click to copy booking reference';
-                bookingRef.addEventListener('click', function() {
-                    navigator.clipboard.writeText(this.textContent.trim()).then(function() {
+                bookingRef.addEventListener('click', function () {
+                    navigator.clipboard.writeText(this.textContent.trim()).then(function () {
                         alert('Booking reference copied to clipboard!');
                     });
                 });
@@ -546,31 +565,39 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
     <style>
         /* Print styles */
         @media print {
-            .header, .footer, .btn, button, .alert:not(.alert_success):not(.alert_info) {
+
+            .header,
+            .footer,
+            .btn,
+            button,
+            .alert:not(.alert_success):not(.alert_info) {
                 display: none !important;
             }
-            
+
             .container {
                 max-width: none !important;
                 margin: 0 !important;
                 padding: 0 !important;
             }
-            
+
             .table_container {
                 border: 1px solid #333 !important;
                 margin-bottom: 1rem !important;
                 page-break-inside: avoid;
             }
-            
+
             body {
                 font-size: 12pt !important;
                 line-height: 1.4 !important;
             }
-            
-            h2, h3, h4 {
+
+            h2,
+            h3,
+            h4 {
                 color: #000 !important;
             }
         }
     </style>
 </body>
+
 </html>

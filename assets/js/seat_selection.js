@@ -6,10 +6,10 @@ let basePricePerSeat = 0; // Will be set by the page
 // Initialize the seat selection system
 function initSeatSelection(basePrice, accountHolderName) {
     basePricePerSeat = basePrice;
-    
+
     // Initialize with one passenger
     addPassenger(accountHolderName);
-    
+
     // Initialize form validation
     setupFormValidation();
 }
@@ -20,15 +20,15 @@ function selectSeat(seatElement) {
         alert('This seat is already booked. Please select another seat.');
         return;
     }
-    
+
     const seatId = seatElement.getAttribute('data-seat-id');
     const seatNumber = seatElement.getAttribute('data-seat-number'); // Now this is just a simple number like "1", "2", "3"
-    
+
     if (seatElement.classList.contains('selected')) {
         // Deselect seat
         seatElement.classList.remove('selected');
         selectedSeats.delete(seatId);
-        
+
         // Remove from passengers who had this seat
         passengers.forEach(passenger => {
             if (passenger.seatId === seatId) {
@@ -44,17 +44,17 @@ function selectSeat(seatElement) {
             alert('All passengers already have seats. Add more passengers or deselect a seat first.');
             return;
         }
-        
+
         // Select seat
         seatElement.classList.add('selected');
         selectedSeats.add(seatId);
-        
+
         // Assign to first passenger without a seat
         passengerWithoutSeat.seatId = seatId;
         passengerWithoutSeat.seatNumber = seatNumber; // Simple number
         updatePassengerDisplay(passengerWithoutSeat.id);
     }
-    
+
     updateBookingButton();
     updateSeatColors();
 }
@@ -62,7 +62,7 @@ function selectSeat(seatElement) {
 function addPassenger(defaultName = '') {
     passengerCounter++;
     const passengerId = 'passenger_' + passengerCounter;
-    
+
     const passenger = {
         id: passengerId,
         name: defaultName || '',
@@ -71,9 +71,9 @@ function addPassenger(defaultName = '') {
         seatNumber: null, // Actual seat number (A01, B02, etc.)
         displayNumber: null // Display number (1, 2, 3, etc.)
     };
-    
+
     passengers.push(passenger);
-    
+
     const passengerIndex = passengers.length - 1;
     const passengerHtml = `
         <div class="passenger_form" id="${passengerId}">
@@ -112,7 +112,7 @@ function addPassenger(defaultName = '') {
             <input type="hidden" name="passengers[${passengerIndex}][seat_id]" value="" data-passenger-id="${passengerId}">
         </div>
     `;
-    
+
     document.getElementById('passengers_container').insertAdjacentHTML('beforeend', passengerHtml);
     updatePassengerCount();
     updateBookingButton();
@@ -128,16 +128,16 @@ function removePassenger(passengerId) {
         }
         selectedSeats.delete(passenger.seatId);
     }
-    
+
     // Remove from passengers array
     passengers = passengers.filter(p => p.id !== passengerId);
-    
+
     // Remove from DOM
     const passengerElement = document.getElementById(passengerId);
     if (passengerElement) {
         passengerElement.remove();
     }
-    
+
     // Reindex form inputs
     reindexPassengerForms();
     updatePassengerCount();
@@ -149,7 +149,7 @@ function updatePassengerData(passengerId, field, value) {
     const passenger = passengers.find(p => p.id === passengerId);
     if (passenger) {
         passenger[field] = value;
-        
+
         // If gender changed, update seat colors
         if (field === 'gender') {
             updateSeatColors();
@@ -160,11 +160,11 @@ function updatePassengerData(passengerId, field, value) {
 function updatePassengerDisplay(passengerId) {
     const passenger = passengers.find(p => p.id === passengerId);
     const passengerElement = document.getElementById(passengerId);
-    
+
     if (passenger && passengerElement) {
         const seatStatus = passengerElement.querySelector('.seat_status .seat_indicator');
         const hiddenSeatInput = passengerElement.querySelector('input[name*="[seat_id]"]');
-        
+
         if (passenger.seatId) {
             // Show simple seat number
             seatStatus.textContent = `Seat ${passenger.seatNumber}`;
@@ -202,7 +202,7 @@ function reindexPassengerForms() {
                 }
             }
         });
-        
+
         const passengerNumber = form.querySelector('.passenger_number');
         if (passengerNumber) {
             passengerNumber.textContent = `Passenger ${index + 1}`;
@@ -213,11 +213,11 @@ function reindexPassengerForms() {
 function updatePassengerCount() {
     const countElement = document.getElementById('passenger_count');
     const totalElement = document.getElementById('total_amount');
-    
+
     if (countElement) {
         countElement.textContent = passengers.length;
     }
-    
+
     if (totalElement) {
         const totalAmount = passengers.length * basePricePerSeat;
         totalElement.textContent = 'LKR ' + totalAmount.toLocaleString();
@@ -227,11 +227,11 @@ function updatePassengerCount() {
 function updateBookingButton() {
     const bookButton = document.getElementById('book_button');
     if (!bookButton) return;
-    
+
     const allPassengersHaveSeats = passengers.length > 0 && passengers.every(p => p.seatId);
     const allPassengersHaveGender = passengers.length > 0 && passengers.every(p => p.gender);
     const allPassengersHaveNames = passengers.length > 0 && passengers.every(p => p.name.trim() !== '');
-    
+
     if (passengers.length === 0) {
         bookButton.disabled = true;
         bookButton.textContent = 'Add Passengers First';
@@ -252,17 +252,17 @@ function updateBookingButton() {
 
 function updateSeatColors() {
     const availableSeats = document.querySelectorAll('.seat.available:not(.selected)');
-    
+
     // Reset all available seats to neutral
     availableSeats.forEach(seat => {
         seat.classList.remove('male', 'female', 'neutral');
         seat.classList.add('neutral');
     });
-    
+
     // Get unique genders of passengers who need seats
     const passengersNeedingSeats = passengers.filter(p => !p.seatId && p.gender);
     const genders = [...new Set(passengersNeedingSeats.map(p => p.gender))];
-    
+
     // If we have passengers with genders, color the seats
     if (genders.length > 0) {
         // If all passengers are the same gender, use that gender
@@ -284,15 +284,15 @@ function updateSeatColors() {
 function setupFormValidation() {
     const bookingForm = document.getElementById('booking_form');
     if (!bookingForm) return;
-    
+
     // Form validation
-    bookingForm.addEventListener('submit', function(e) {
+    bookingForm.addEventListener('submit', function (e) {
         if (passengers.length === 0) {
             e.preventDefault();
             alert('Please add at least one passenger.');
             return false;
         }
-        
+
         // Check if all passengers have names
         const missingNames = passengers.filter(p => !p.name || p.name.trim() === '');
         if (missingNames.length > 0) {
@@ -300,7 +300,7 @@ function setupFormValidation() {
             alert('Please enter names for all passengers.');
             return false;
         }
-        
+
         // Check if all passengers have genders
         const missingGenders = passengers.filter(p => !p.gender);
         if (missingGenders.length > 0) {
@@ -308,7 +308,7 @@ function setupFormValidation() {
             alert('Please select gender for all passengers.');
             return false;
         }
-        
+
         // Check if all passengers have seats
         const allPassengersHaveSeats = passengers.every(p => p.seatId);
         if (!allPassengersHaveSeats) {
@@ -316,17 +316,17 @@ function setupFormValidation() {
             alert('Please select seats for all passengers.');
             return false;
         }
-        
+
         // Show confirmation with simple seat numbers
         const totalAmount = passengers.length * basePricePerSeat;
         const seatNumbers = passengers.map(p => p.seatNumber).join(', ');
         const confirmMessage = `Confirm booking for ${passengers.length} passenger(s)?\n\nTotal Amount: LKR ${totalAmount.toLocaleString()}\n\nSeats: ${seatNumbers}`;
-        
+
         if (!confirm(confirmMessage)) {
             e.preventDefault();
             return false;
         }
-        
+
         // All validation passed - form can submit
         return true;
     });

@@ -17,17 +17,17 @@ try {
     $stmt = $pdo->prepare("SELECT COUNT(*) as bus_count FROM buses WHERE operator_id = ?");
     $stmt->execute([$user_id]);
     $total_buses = $stmt->fetch()['bus_count'];
-    
+
     // Get active bus count
     $stmt = $pdo->prepare("SELECT COUNT(*) as active_buses FROM buses WHERE operator_id = ? AND status = 'active'");
     $stmt->execute([$user_id]);
     $active_buses = $stmt->fetch()['active_buses'];
-    
+
     // Get active schedules count for this operator
     $stmt = $pdo->prepare("SELECT COUNT(*) as schedule_count FROM schedules s JOIN buses b ON s.bus_id = b.bus_id WHERE b.operator_id = ? AND s.status = 'active'");
     $stmt->execute([$user_id]);
     $active_routes = $stmt->fetch()['schedule_count'];
-    
+
     // Get actual bookings count for today
     $stmt = $pdo->prepare("
         SELECT COUNT(*) as today_bookings 
@@ -40,7 +40,7 @@ try {
     ");
     $stmt->execute([$user_id]);
     $today_bookings = $stmt->fetch()['today_bookings'];
-    
+
     // UPDATED: Get comprehensive revenue statistics for this operator
     $stmt = $pdo->prepare("
         SELECT 
@@ -57,7 +57,7 @@ try {
     $stmt->execute([$user_id]);
     $booking_revenue_stats = $stmt->fetch();
     $total_booking_revenue = $booking_revenue_stats['total_booking_revenue'] ?? 0;
-    
+
     // UPDATED: Get comprehensive parcel statistics for this operator's routes
     $stmt = $pdo->prepare("
         SELECT 
@@ -81,18 +81,18 @@ try {
     $stmt->execute([$user_id]);
     $parcel_revenue_stats = $stmt->fetch();
     $total_parcel_revenue = $parcel_revenue_stats['total_parcel_revenue'] ?? 0;
-    
+
     // Calculate total revenue
     $total_revenue = $total_booking_revenue + $total_parcel_revenue;
-    
+
     // Get operator info
     $stmt = $pdo->prepare("SELECT full_name, email, phone, created_at FROM users WHERE user_id = ?");
     $stmt->execute([$user_id]);
     $operator_info = $stmt->fetch();
-    
+
     // Get recent activities (last 10 activities)
     $recent_activities = [];
-    
+
     // Recent bus additions/updates (last 5)
     $stmt = $pdo->prepare("
         SELECT 
@@ -107,7 +107,7 @@ try {
     ");
     $stmt->execute([$user_id]);
     $bus_activities = $stmt->fetchAll();
-    
+
     // Recent bookings (last 5)
     $stmt = $pdo->prepare("
         SELECT 
@@ -124,14 +124,14 @@ try {
     ");
     $stmt->execute([$user_id]);
     $booking_activities = $stmt->fetchAll();
-    
+
     // Merge and sort activities
     $recent_activities = array_merge($bus_activities, $booking_activities);
-    usort($recent_activities, function($a, $b) {
+    usort($recent_activities, function ($a, $b) {
         return strtotime($b['action_time']) - strtotime($a['action_time']);
     });
     $recent_activities = array_slice($recent_activities, 0, 8);
-    
+
 } catch (PDOException $e) {
     $error = "Error loading dashboard data: " . $e->getMessage();
     $total_buses = $active_buses = $active_routes = $today_bookings = $total_revenue = 0;
@@ -143,12 +143,14 @@ try {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Operator Dashboard - Road Runner</title>
     <link rel="stylesheet" href="../assets/css/style.css">
 </head>
+
 <body>
     <!-- Header -->
     <header class="header">
@@ -171,7 +173,7 @@ try {
                 <a href="buses.php">Buses</a>
                 <a href="schedules.php">Schedules</a>
                 <a href="parcels.php">Parcel Management</a>
-                <a href="#" onclick="alert('Coming soon!')">View All Bookings</a>
+                <a href="bookings.php">View All Bookings</a>
             </div>
         </div>
     </div>
@@ -197,17 +199,17 @@ try {
                 <div class="stat_number"><?php echo $total_buses; ?></div>
                 <div class="stat_label">Total Buses</div>
             </div>
-            
+
             <div class="stat_card">
                 <div class="stat_number"><?php echo $active_buses; ?></div>
                 <div class="stat_label">Active Buses</div>
             </div>
-            
+
             <div class="stat_card">
                 <div class="stat_number"><?php echo $active_routes; ?></div>
                 <div class="stat_label">Active Schedules</div>
             </div>
-            
+
             <div class="stat_card">
                 <div class="stat_number" style="color: #3498db;"><?php echo $today_bookings; ?></div>
                 <div class="stat_label">Today's Bookings</div>
@@ -221,19 +223,20 @@ try {
                 <div class="stat_number"><?php echo $parcel_revenue_stats['pending_parcels'] ?? 0; ?></div>
                 <div class="stat_label">Pending Parcels</div>
             </div>
-            
+
             <div class="stat_card">
                 <div class="stat_number"><?php echo $parcel_revenue_stats['in_transit_parcels'] ?? 0; ?></div>
                 <div class="stat_label">In Transit</div>
             </div>
-            
+
             <div class="stat_card">
                 <div class="stat_number"><?php echo $parcel_revenue_stats['delivered_parcels'] ?? 0; ?></div>
                 <div class="stat_label">Delivered</div>
             </div>
-            
+
             <div class="stat_card">
-                <div class="stat_number" style="color: #e74c3c;"><?php echo $parcel_revenue_stats['cancelled_parcels'] ?? 0; ?></div>
+                <div class="stat_number" style="color: #e74c3c;">
+                    <?php echo $parcel_revenue_stats['cancelled_parcels'] ?? 0; ?></div>
                 <div class="stat_label">Cancelled Parcels</div>
             </div>
         </div>
@@ -241,17 +244,21 @@ try {
         <!-- ADDED: Revenue Summary Section (similar to admin dashboard) -->
         <div class="alert alert_success mb_2">
             <h4>💰 Revenue Summary</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
                 <div style="text-align: center;">
-                    <strong style="font-size: 1.5rem; color: #2c3e50;">LKR <?php echo number_format($total_booking_revenue); ?></strong><br>
+                    <strong style="font-size: 1.5rem; color: #2c3e50;">LKR
+                        <?php echo number_format($total_booking_revenue); ?></strong><br>
                     <span style="color: #666;">Bus Booking Revenue</span>
                 </div>
                 <div style="text-align: center;">
-                    <strong style="font-size: 1.5rem; color: #2c3e50;">LKR <?php echo number_format($total_parcel_revenue); ?></strong><br>
+                    <strong style="font-size: 1.5rem; color: #2c3e50;">LKR
+                        <?php echo number_format($total_parcel_revenue); ?></strong><br>
                     <span style="color: #666;">Parcel Delivery Revenue</span>
                 </div>
                 <div style="text-align: center;">
-                    <strong style="font-size: 1.5rem; color: #27ae60;">LKR <?php echo number_format($total_revenue); ?></strong><br>
+                    <strong style="font-size: 1.5rem; color: #27ae60;">LKR
+                        <?php echo number_format($total_revenue); ?></strong><br>
                     <span style="color: #666;">Total Revenue</span>
                 </div>
             </div>
@@ -259,7 +266,7 @@ try {
 
         <!-- Two Column Layout -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem 0;">
-            
+
             <!-- Operator Information -->
             <div class="table_container">
                 <h3 class="p_1 mb_1">Operator Information</h3>
@@ -279,15 +286,18 @@ try {
                         </div>
                         <div class="dashboard_metric">
                             <span class="metric_label">Member Since:</span>
-                            <span class="metric_value"><?php echo date('M j, Y', strtotime($operator_info['created_at'])); ?></span>
+                            <span
+                                class="metric_value"><?php echo date('M j, Y', strtotime($operator_info['created_at'])); ?></span>
                         </div>
                         <div class="dashboard_metric">
                             <span class="metric_label">Today's Bookings:</span>
-                            <span class="metric_value" style="color: #3498db;"><?php echo $today_bookings; ?> booking<?php echo $today_bookings !== 1 ? 's' : ''; ?></span>
+                            <span class="metric_value" style="color: #3498db;"><?php echo $today_bookings; ?>
+                                booking<?php echo $today_bookings !== 1 ? 's' : ''; ?></span>
                         </div>
                         <div class="p_2">
                             <div style="display: flex; flex-direction: column; gap: 1rem;">
-                                <a href="../my_reviews.php" class="btn btn_success" style="text-align: center; text-decoration: none;">
+                                <a href="../my_reviews.php" class="btn btn_success"
+                                    style="text-align: center; text-decoration: none;">
                                     📊 Bus Reviews
                                 </a>
                             </div>
@@ -306,15 +316,17 @@ try {
                         <?php foreach ($recent_activities as $activity): ?>
                             <div class="activity_item">
                                 <div class="activity_icon">
-                                    <?php 
-                                    echo $activity['action_category'] === 'bus_added' ? '🚌' : 
-                                         ($activity['action_category'] === 'booking_received' ? '🎫' : '📋'); 
+                                    <?php
+                                    echo $activity['action_category'] === 'bus_added' ? '🚌' :
+                                        ($activity['action_category'] === 'booking_received' ? '🎫' : '📋');
                                     ?>
                                 </div>
                                 <div class="activity_content">
                                     <div class="activity_type"><?php echo htmlspecialchars($activity['action_type']); ?></div>
-                                    <div class="activity_details"><?php echo htmlspecialchars($activity['action_details']); ?></div>
-                                    <div class="activity_time"><?php echo date('M j, g:i A', strtotime($activity['action_time'])); ?></div>
+                                    <div class="activity_details"><?php echo htmlspecialchars($activity['action_details']); ?>
+                                    </div>
+                                    <div class="activity_time">
+                                        <?php echo date('M j, g:i A', strtotime($activity['action_time'])); ?></div>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -347,17 +359,17 @@ try {
 
     <script>
         // Auto-refresh dashboard statistics every 5 minutes
-        setInterval(function() {
+        setInterval(function () {
             if (document.hasFocus()) {
                 location.reload();
             }
         }, 300000); // 5 minutes
-        
+
         // Add visual feedback for buttons
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const buttons = document.querySelectorAll('.btn');
             buttons.forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function () {
                     this.style.transform = 'scale(0.95)';
                     setTimeout(() => {
                         this.style.transform = 'scale(1)';
@@ -367,4 +379,5 @@ try {
         });
     </script>
 </body>
+
 </html>
