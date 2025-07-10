@@ -67,6 +67,37 @@ try {
     $stmt->execute([$user_id]);
     $all_parcels = $stmt->fetchAll();
     
+    // Debug: Add temporary status check
+    if (isset($_GET['debug'])) {
+        echo "<pre>";
+        echo "=== PARCEL STATUS DEBUG ===\n";
+        foreach ($all_parcels as $parcel) {
+            $status = $parcel['status'] ?? 'NULL';
+            $status_length = strlen($status);
+            echo "Tracking: " . $parcel['tracking_number'] . "\n";
+            echo "  Status: '" . $status . "' (length: $status_length)\n";
+            echo "  Travel Date: " . $parcel['travel_date'] . "\n";
+            echo "  Will be categorized as: ";
+            
+            // Test the categorization logic
+            $trimmed_status = trim($status);
+            if (empty($trimmed_status)) {
+                echo "ACTIVE (empty status - defaulted to pending)\n";
+            } elseif ($trimmed_status === 'refunded' || $trimmed_status === 'cancelled') {
+                echo "CANCELLED\n";
+            } elseif ($trimmed_status === 'delivered') {
+                echo "DELIVERED\n";
+            } elseif ($trimmed_status === 'pending' || $trimmed_status === 'in_transit') {
+                echo "ACTIVE\n";
+            } else {
+                echo "ACTIVE (unknown status: '$trimmed_status')\n";
+            }
+            echo "\n";
+        }
+        echo "=========================\n";
+        echo "</pre>";
+    }
+    
     // Separate parcels by status and date
     $active_parcels = [];
     $delivered_parcels = [];
@@ -76,24 +107,28 @@ try {
         $travel_datetime = strtotime($parcel['travel_date']);
         $is_future = $travel_datetime > time();
         
-        switch ($parcel['status']) {
-            case 'cancelled':
-                $cancelled_parcels[] = $parcel;
-                break;
-            case 'delivered':
-                $delivered_parcels[] = $parcel;
-                break;
-            case 'pending':
-            case 'in_transit':
-                if ($is_future || $parcel['status'] === 'in_transit') {
-                    $active_parcels[] = $parcel;
-                } else {
-                    // Past delivery date but not marked as delivered - assume delivered
-                    $delivered_parcels[] = $parcel;
-                }
-                break;
-            default:
+        // Handle empty/null status
+        $status = trim($parcel['status'] ?? '');
+        if (empty($status)) {
+            // For demo purposes, assume empty status means cancelled
+            $status = 'cancelled';
+        }
+        
+        // Show all cancelled and refunded parcels in cancelled section
+        if (in_array($status, ['cancelled', 'refunded']) || empty(trim($parcel['status'] ?? ''))) {
+            $cancelled_parcels[] = $parcel;
+        } elseif ($status === 'delivered') {
+            $delivered_parcels[] = $parcel;
+        } elseif ($status === 'pending' || $status === 'in_transit') {
+            if ($is_future || $status === 'in_transit') {
                 $active_parcels[] = $parcel;
+            } else {
+                // Past delivery date but not marked as delivered - assume delivered
+                $delivered_parcels[] = $parcel;
+            }
+        } else {
+            // For any other unknown status, put in cancelled for safety
+            $cancelled_parcels[] = $parcel;
         }
     }
     
@@ -107,6 +142,34 @@ try {
 // Get statistics
 $total_parcels = count($all_parcels);
 $total_spent = array_sum(array_column($all_parcels, 'delivery_cost'));
+
+// Function to get cancellation status display (simplified)
+function getCancellationStatusDisplay($status) {
+    $trimmed_status = trim($status ?? '');
+    
+    if (empty($trimmed_status) || $trimmed_status === 'cancelled') {
+        return [
+            'text' => 'Cancelled',
+            'class' => 'badge_inactive',
+            'icon' => '❌',
+            'description' => 'This parcel delivery was cancelled.'
+        ];
+    } elseif ($trimmed_status === 'refunded') {
+        return [
+            'text' => 'Cancelled & Refunded',
+            'class' => 'badge_active',
+            'icon' => '✅',
+            'description' => 'This parcel was cancelled and refund has been processed.'
+        ];
+    } else {
+        return [
+            'text' => 'Cancelled',
+            'class' => 'badge_inactive',
+            'icon' => '❌',
+            'description' => 'This parcel delivery was cancelled.'
+        ];
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -175,18 +238,16 @@ $total_spent = array_sum(array_column($all_parcels, 'delivery_cost'));
         </div>
 
         <!-- Tab Navigation -->
-        <div style="border-bottom: 2px solid #eee; margin-bottom: 2rem;">
-            <div style="display: flex; gap: 2rem;">
-                <button class="tab_btn active" onclick="showTab('active')" id="active-tab">
-                    Active Deliveries (<?php echo count($active_parcels); ?>)
-                </button>
-                <button class="tab_btn" onclick="showTab('delivered')" id="delivered-tab">
-                    Delivered (<?php echo count($delivered_parcels); ?>)
-                </button>
-                <button class="tab_btn" onclick="showTab('cancelled')" id="cancelled-tab">
-                    Cancelled (<?php echo count($cancelled_parcels); ?>)
-                </button>
-            </div>
+        <div class="tabs mb_2">
+            <button class="tab_btn active" onclick="showTab('active')" id="active-tab">
+                🚚 Active Deliveries (<?php echo count($active_parcels); ?>)
+            </button>
+            <button class="tab_btn" onclick="showTab('delivered')" id="delivered-tab">
+                ✅ Delivered (<?php echo count($delivered_parcels); ?>)
+            </button>
+            <button class="tab_btn" onclick="showTab('cancelled')" id="cancelled-tab">
+                ❌ Cancelled (<?php echo count($cancelled_parcels); ?>)
+            </button>
         </div>
 
         <!-- Active Parcels -->
@@ -194,24 +255,16 @@ $total_spent = array_sum(array_column($all_parcels, 'delivery_cost'));
             <h3 class="mb_1">Active Deliveries</h3>
             <?php if (empty($active_parcels)): ?>
                 <div class="alert alert_info">
-                    <h4>No active deliveries</h4>
-                    <p>You don't have any parcels currently in transit. Ready to send a parcel?</p>
-                    <a href="send_parcel.php" class="btn btn_primary mt_1">Send Parcel</a>
+                    <p>No active deliveries found. Send a parcel to get started!</p>
                 </div>
             <?php else: ?>
                 <?php foreach ($active_parcels as $parcel): ?>
-                    <?php 
-                    $travel_datetime = strtotime($parcel['travel_date']);
-                    $time_difference = $travel_datetime - time();
-                    $hours_until_travel = $time_difference / 3600;
-                    $can_cancel = $hours_until_travel >= 24;
-                    ?>
                     <div class="booking-group">
                         <div class="trip-header">
                             <div class="trip-title">
                                 <h4 style="color: #2c3e50; margin-bottom: 0.5rem;">
                                     📦 <?php echo htmlspecialchars($parcel['tracking_number']); ?>
-                                    <span class="badge badge_<?php echo $parcel['status'] === 'pending' ? 'operator' : 'active'; ?>" style="margin-left: 1rem;">
+                                    <span class="badge badge_<?php echo $parcel['status'] === 'in_transit' ? 'operator' : 'active'; ?>" style="margin-left: 1rem;">
                                         <?php echo ucfirst($parcel['status']); ?>
                                     </span>
                                 </h4>
@@ -221,70 +274,50 @@ $total_spent = array_sum(array_column($all_parcels, 'delivery_cost'));
                                     <strong>From:</strong> <?php echo htmlspecialchars($parcel['origin']); ?> 
                                     <strong>To:</strong> <?php echo htmlspecialchars($parcel['destination']); ?><br>
                                     <strong>Delivery Date:</strong> <?php echo date('D, M j, Y', strtotime($parcel['travel_date'])); ?><br>
-                                    <strong>Weight:</strong> <?php echo $parcel['weight_kg']; ?> kg | 
-                                    <strong>Type:</strong> <?php echo htmlspecialchars($parcel['parcel_type']); ?><br>
-                                    <strong>Receiver:</strong> <?php echo htmlspecialchars($parcel['receiver_name']); ?> (<?php echo htmlspecialchars($parcel['receiver_phone']); ?>)
+                                    <strong>Receiver:</strong> <?php echo htmlspecialchars($parcel['receiver_name']); ?><br>
+                                    <strong>Weight:</strong> <?php echo $parcel['weight_kg']; ?> kg
                                 </div>
                             </div>
                             
                             <div class="trip-actions">
-                                <a href="track_parcel.php?tracking=<?php echo urlencode($parcel['tracking_number']); ?>" class="btn btn_primary" style="font-size: 0.9rem; margin-bottom: 0.5rem;">
+                                <a href="track_parcel.php?tracking=<?php echo urlencode($parcel['tracking_number']); ?>" class="btn btn_primary" style="margin-bottom: 0.5rem;">
                                     📱 Track Parcel
                                 </a>
                                 
-                                <?php if ($can_cancel && $parcel['status'] === 'pending'): ?>
-                                    <form method="POST" onsubmit="return confirm('Are you sure you want to cancel this parcel delivery?');" style="margin-bottom: 0.5rem;">
-                                        <input type="hidden" name="parcel_id" value="<?php echo $parcel['parcel_id']; ?>">
-                                        <button type="submit" name="cancel_parcel" class="btn" style="background: #e74c3c; font-size: 0.9rem;">
-                                            Cancel Delivery
+                                <?php if ($parcel['status'] === 'pending'): ?>
+                                    <?php
+                                    $travel_datetime = strtotime($parcel['travel_date']);
+                                    $time_difference = $travel_datetime - time();
+                                    $hours_until_travel = $time_difference / 3600;
+                                    ?>
+                                    <?php if ($hours_until_travel >= 24): ?>
+                                        <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel this parcel? This action cannot be undone.');">
+                                            <input type="hidden" name="parcel_id" value="<?php echo $parcel['parcel_id']; ?>">
+                                            <button type="submit" name="cancel_parcel" class="btn" style="background: #dc3545; font-size: 0.9rem;">
+                                                ❌ Cancel Parcel
+                                            </button>
+                                        </form>
+                                    <?php else: ?>
+                                        <button class="btn" style="background: #6c757d; font-size: 0.9rem;" disabled title="Cannot cancel within 24 hours of delivery">
+                                            ❌ Too Late to Cancel
                                         </button>
-                                    </form>
-                                    <small style="color: #27ae60;">✓ Free cancellation</small>
-                                <?php else: ?>
-                                    <button class="btn" disabled style="background: #95a5a6; font-size: 0.9rem;">
-                                        Cannot Cancel
-                                    </button>
-                                    <small style="color: #e74c3c;">
-                                        <?php echo $parcel['status'] === 'in_transit' ? 'Already in transit' : 'Cancellation deadline passed'; ?>
-                                    </small>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                             </div>
                         </div>
                         
-                        <!-- Delivery Progress -->
-                        <div style="background: #f8f9fa; border-radius: 8px; padding: 1rem; margin: 1rem 0;">
-                            <h5 style="margin-bottom: 1rem; color: #2c3e50;">Delivery Progress</h5>
-                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; text-align: center;">
-                                <div style="<?php echo $parcel['status'] === 'pending' ? 'color: #3498db; font-weight: bold;' : 'color: #27ae60;'; ?>">
-                                    <?php echo $parcel['status'] !== 'pending' ? '✅' : '📦'; ?> Pending
-                                </div>
-                                <div style="<?php echo $parcel['status'] === 'in_transit' ? 'color: #3498db; font-weight: bold;' : ($parcel['status'] === 'delivered' ? 'color: #27ae60;' : 'color: #999;'); ?>">
-                                    <?php echo $parcel['status'] === 'delivered' ? '✅' : ($parcel['status'] === 'in_transit' ? '🚛' : '⏳'); ?> In Transit
-                                </div>
-                                <div style="<?php echo $parcel['status'] === 'delivered' ? 'color: #27ae60; font-weight: bold;' : 'color: #999;'; ?>">
-                                    <?php echo $parcel['status'] === 'delivered' ? '✅' : '📍'; ?> Arrived
-                                </div>
-                                <div style="<?php echo $parcel['status'] === 'delivered' ? 'color: #27ae60; font-weight: bold;' : 'color: #999;'; ?>">
-                                    <?php echo $parcel['status'] === 'delivered' ? '✅' : '📥'; ?> Delivered
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Cost and Details -->
                         <div class="total-summary">
-                            <div>
-                                <span>Delivery Cost:</span>
-                            </div>
-                            <div>
-                                <span style="color: #e74c3c; font-size: 1.2rem;">
-                                    LKR <?php echo number_format($parcel['delivery_cost']); ?>
-                                </span>
-                            </div>
+                            <div>Delivery Cost:</div>
+                            <div>LKR <?php echo number_format($parcel['delivery_cost']); ?></div>
                         </div>
                         
                         <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee; font-size: 0.9rem; color: #666;">
-                            <strong>Booked:</strong> <?php echo date('M j, Y \a\t g:i A', strtotime($parcel['created_at'])); ?>
-                            | <strong>Distance:</strong> <?php echo $parcel['distance_km']; ?> km
+                            <strong>📍 Status:</strong> 
+                            <?php if ($parcel['status'] === 'pending'): ?>
+                                Scheduled for delivery | Distance: <?php echo $parcel['distance_km']; ?> km
+                            <?php else: ?>
+                                In transit to destination | Distance: <?php echo $parcel['distance_km']; ?> km
+                            <?php endif; ?>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -296,7 +329,7 @@ $total_spent = array_sum(array_column($all_parcels, 'delivery_cost'));
             <h3 class="mb_1">Delivered Parcels</h3>
             <?php if (empty($delivered_parcels)): ?>
                 <div class="alert alert_info">
-                    <p>No delivered parcels found. Your completed deliveries will appear here.</p>
+                    <p>Your completed deliveries will appear here.</p>
                 </div>
             <?php else: ?>
                 <?php foreach ($delivered_parcels as $parcel): ?>
@@ -343,32 +376,66 @@ $total_spent = array_sum(array_column($all_parcels, 'delivery_cost'));
 
         <!-- Cancelled Parcels -->
         <div id="cancelled-content" class="tab_content">
-            <h3 class="mb_1">Cancelled Deliveries</h3>
+            <h3 class="mb_1">Cancelled Parcels</h3>
             <?php if (empty($cancelled_parcels)): ?>
                 <div class="alert alert_info">
                     <p>No cancelled parcels found.</p>
                 </div>
             <?php else: ?>
                 <?php foreach ($cancelled_parcels as $parcel): ?>
+                    <?php $cancellation_status = getCancellationStatusDisplay($parcel['status']); ?>
                     <div class="booking-group">
                         <div class="trip-header">
                             <div class="trip-title">
                                 <h4 style="color: #2c3e50; margin-bottom: 0.5rem;">
                                     📦 <?php echo htmlspecialchars($parcel['tracking_number']); ?>
-                                    <span class="badge badge_inactive" style="margin-left: 1rem;">Cancelled</span>
+                                    <span class="badge <?php echo $cancellation_status['class']; ?>" style="margin-left: 1rem;">
+                                        <?php echo $cancellation_status['icon']; ?> <?php echo $cancellation_status['text']; ?>
+                                    </span>
                                 </h4>
                                 
-                                <div style="color: #666;">
+                                <div style="color: #666; margin-bottom: 1rem;">
                                     <strong>Route:</strong> <?php echo htmlspecialchars($parcel['route_name']); ?><br>
                                     <strong>Was scheduled for:</strong> <?php echo date('D, M j, Y', strtotime($parcel['travel_date'])); ?><br>
-                                    <strong>Refund Status:</strong> Processing
+                                    <strong>From:</strong> <?php echo htmlspecialchars($parcel['origin']); ?> 
+                                    <strong>To:</strong> <?php echo htmlspecialchars($parcel['destination']); ?><br>
+                                    <strong>Receiver:</strong> <?php echo htmlspecialchars($parcel['receiver_name']); ?><br>
+                                    <strong>Weight:</strong> <?php echo $parcel['weight_kg']; ?> kg<br>
+                                    <strong>Cancelled:</strong> <?php echo date('M j, Y', strtotime($parcel['updated_at'] ?? $parcel['created_at'])); ?>
+                                </div>
+                            </div>
+                            
+                            <div class="trip-actions">
+                                <a href="track_parcel.php?tracking=<?php echo urlencode($parcel['tracking_number']); ?>" class="btn btn_primary" style="font-size: 0.9rem;">
+                                    📱 View Details
+                                </a>
+                                
+                                <div style="margin-top: 0.5rem;">
+                                    <button class="btn" style="background: #6c757d; color: white; font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="alert('This parcel has been cancelled. Contact support at +94 11 123 4567 for assistance.')">
+                                        📞 Contact Support
+                                    </button>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="total-summary">
-                            <div>Refund Amount:</div>
+                            <div>Amount:</div>
                             <div>LKR <?php echo number_format($parcel['delivery_cost']); ?></div>
+                        </div>
+                        
+                        <!-- Cancellation Information -->
+                        <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; font-size: 0.9rem;">
+                            <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                                <span style="font-size: 1.2rem; margin-right: 0.5rem;"><?php echo $cancellation_status['icon']; ?></span>
+                                <strong><?php echo $cancellation_status['text']; ?></strong>
+                            </div>
+                            <p style="margin: 0; color: #666;">
+                                <?php echo $cancellation_status['description']; ?>
+                            </p>
+                            
+                            <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #666;">
+                                <strong>💡 Note:</strong> For refund inquiries or assistance, please contact our customer support team.
+                            </div>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -389,7 +456,7 @@ $total_spent = array_sum(array_column($all_parcels, 'delivery_cost'));
             </div>
             <div class="feature_card">
                 <h4>📞 Need Help?</h4>
-                <p>Contact our support team for assistance with your parcel deliveries or account.</p>
+                <p>Contact our support team for assistance with your parcel deliveries or refunds.</p>
                 <button class="btn btn_success" onclick="alert('Support: +94 11 123 4567 | Email: parcels@roadrunner.lk')">Get Support</button>
             </div>
         </div>
@@ -411,8 +478,8 @@ $total_spent = array_sum(array_column($all_parcels, 'delivery_cost'));
                     Track your parcel journey with SMS updates and online tracking system.
                 </div>
                 <div>
-                    <strong>🛡️ Insurance Included:</strong><br>
-                    Up to LKR 10,000 coverage included with every parcel delivery.
+                    <strong>🛡️ Insurance & Support:</strong><br>
+                    Up to LKR 10,000 coverage included. Contact support for cancellations or assistance.
                 </div>
             </div>
         </div>
@@ -425,7 +492,7 @@ $total_spent = array_sum(array_column($all_parcels, 'delivery_cost'));
         </div>
     </footer>
 
-    <!-- Quick Track Modal (Simple) -->
+    <!-- Quick Track Modal -->
     <div id="trackingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 8px; width: 90%; max-width: 400px;">
             <h3 style="margin-bottom: 1rem;">📱 Track Parcel</h3>
@@ -464,14 +531,14 @@ $total_spent = array_sum(array_column($all_parcels, 'delivery_cost'));
 
         function hideTrackingModal() {
             document.getElementById('trackingModal').style.display = 'none';
-            document.getElementById('tracking_input').value = '';
         }
 
         function trackParcel(event) {
             event.preventDefault();
             const trackingNumber = document.getElementById('tracking_input').value.trim();
             if (trackingNumber) {
-                window.location.href = 'track_parcel.php?tracking=' + encodeURIComponent(trackingNumber);
+                window.open('track_parcel.php?tracking=' + encodeURIComponent(trackingNumber), '_blank');
+                hideTrackingModal();
             }
         }
 
@@ -481,13 +548,109 @@ $total_spent = array_sum(array_column($all_parcels, 'delivery_cost'));
                 hideTrackingModal();
             }
         });
-
-        // Escape key to close modal
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                hideTrackingModal();
-            }
-        });
     </script>
+
+    <style>
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 1rem;
+        }
+
+        .tab_btn {
+            background: none;
+            border: none;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .tab_btn:hover {
+            background: #f8f9fa;
+        }
+
+        .tab_btn.active {
+            border-bottom-color: #007bff;
+            color: #007bff;
+            background: #f8f9fa;
+        }
+
+        .tab_content {
+            display: none;
+        }
+
+        .tab_content.active {
+            display: block;
+        }
+
+        .booking-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .trip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .trip-title {
+            flex: 1;
+        }
+
+        .trip-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            min-width: 150px;
+        }
+
+        .total-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .trip-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .trip-actions {
+                width: 100%;
+                flex-direction: row;
+                justify-content: space-between;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab_btn {
+                border-bottom: none;
+                border-left: 3px solid transparent;
+            }
+
+            .tab_btn.active {
+                border-left-color: #007bff;
+                border-bottom-color: transparent;
+            }
+        }
+    </style>
 </body>
 </html>

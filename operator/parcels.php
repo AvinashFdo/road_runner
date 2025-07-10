@@ -187,13 +187,6 @@ try {
             </div>
         <?php endif; ?>
 
-        <!-- Success Message if parcels found -->
-        <?php if ($total_parcels > 0): ?>
-            <div class="alert alert_success">
-                <strong>✅ System Working!</strong> Found <?php echo $total_parcels; ?> parcel(s) for your routes.
-            </div>
-        <?php endif; ?>
-
         <!-- Statistics Cards -->
         <div class="dashboard_grid mb_2">
             <div class="stat_card">

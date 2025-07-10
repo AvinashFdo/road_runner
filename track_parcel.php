@@ -244,14 +244,21 @@ function generateTrackingHistory($parcel) {
 function getEstimatedDelivery($parcel) {
     $travel_date = strtotime($parcel['travel_date']);
     $current_time = time();
+    $status = trim($parcel['status'] ?? '');
     
-    switch ($parcel['status']) {
+    // Handle empty status as cancelled for demo purposes
+    if (empty($status)) {
+        $status = 'cancelled';
+    }
+    
+    switch ($status) {
         case 'delivered':
             return [
                 'status' => 'delivered',
                 'message' => 'Your parcel has been successfully delivered and picked up.'
             ];
         case 'cancelled':
+        case 'refunded':
             return [
                 'status' => 'cancelled',
                 'message' => 'This parcel delivery has been cancelled.'
@@ -278,7 +285,7 @@ function getEstimatedDelivery($parcel) {
         default:
             return [
                 'status' => 'info',
-                'message' => 'Parcel status: ' . ucfirst($parcel['status'])
+                'message' => 'Parcel status: ' . ucfirst($status)
             ];
     }
 }
