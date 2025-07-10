@@ -41,9 +41,13 @@ try {
     $stmt->execute([$user_id]);
     $today_bookings = $stmt->fetch()['today_bookings'];
     
-    // Get total revenue from confirmed bookings
+    // UPDATED: Get comprehensive revenue statistics for this operator
     $stmt = $pdo->prepare("
-        SELECT SUM(bk.total_amount) as total_revenue 
+        SELECT 
+            SUM(bk.total_amount) as total_booking_revenue,
+            COUNT(bk.booking_id) as total_bookings,
+            SUM(CASE WHEN bk.booking_status = 'confirmed' THEN bk.total_amount ELSE 0 END) as confirmed_revenue,
+            SUM(CASE WHEN bk.booking_status = 'completed' THEN bk.total_amount ELSE 0 END) as completed_revenue
         FROM bookings bk 
         JOIN schedules s ON bk.schedule_id = s.schedule_id 
         JOIN buses b ON s.bus_id = b.bus_id 
@@ -51,7 +55,35 @@ try {
         AND bk.booking_status IN ('confirmed', 'completed')
     ");
     $stmt->execute([$user_id]);
-    $total_revenue = $stmt->fetch()['total_revenue'] ?? 0;
+    $booking_revenue_stats = $stmt->fetch();
+    $total_booking_revenue = $booking_revenue_stats['total_booking_revenue'] ?? 0;
+    
+    // UPDATED: Get comprehensive parcel statistics for this operator's routes
+    $stmt = $pdo->prepare("
+        SELECT 
+            SUM(p.delivery_cost) as total_parcel_revenue,
+            COUNT(p.parcel_id) as total_parcels,
+            SUM(CASE WHEN p.status = 'delivered' THEN p.delivery_cost ELSE 0 END) as delivered_revenue,
+            SUM(CASE WHEN p.status = 'pending' THEN 1 ELSE 0 END) as pending_parcels,
+            SUM(CASE WHEN p.status = 'in_transit' THEN 1 ELSE 0 END) as in_transit_parcels,
+            SUM(CASE WHEN p.status = 'delivered' THEN 1 ELSE 0 END) as delivered_parcels,
+            SUM(CASE WHEN p.status IS NULL OR p.status = '' OR p.status = 'cancelled' OR p.status = 'refunded' THEN 1 ELSE 0 END) as cancelled_parcels
+        FROM parcels p
+        JOIN routes r ON p.route_id = r.route_id
+        WHERE EXISTS (
+            SELECT 1 FROM schedules s 
+            JOIN buses b ON s.bus_id = b.bus_id 
+            WHERE s.route_id = r.route_id 
+            AND b.operator_id = ? 
+            AND s.status = 'active'
+        )
+    ");
+    $stmt->execute([$user_id]);
+    $parcel_revenue_stats = $stmt->fetch();
+    $total_parcel_revenue = $parcel_revenue_stats['total_parcel_revenue'] ?? 0;
+    
+    // Calculate total revenue
+    $total_revenue = $total_booking_revenue + $total_parcel_revenue;
     
     // Get operator info
     $stmt = $pdo->prepare("SELECT full_name, email, phone, created_at FROM users WHERE user_id = ?");
@@ -69,103 +101,43 @@ try {
             created_at as action_time,
             'bus_added' as action_category
         FROM buses 
-        WHERE operator_id = ? 
+        WHERE operator_id = ?
         ORDER BY created_at DESC 
         LIMIT 5
     ");
     $stmt->execute([$user_id]);
     $bus_activities = $stmt->fetchAll();
     
-    // Recent schedule additions/updates (last 5)
-    $stmt = $pdo->prepare("
-        SELECT 
-            'Schedule Management' as action_type,
-            CONCAT('Schedule created for ', r.route_name, ' - ', TIME_FORMAT(s.departure_time, '%h:%i %p')) as action_details,
-            s.created_at as action_time,
-            'schedule_added' as action_category
-        FROM schedules s
-        JOIN buses b ON s.bus_id = b.bus_id
-        JOIN routes r ON s.route_id = r.route_id
-        WHERE b.operator_id = ? 
-        ORDER BY s.created_at DESC 
-        LIMIT 5
-    ");
-    $stmt->execute([$user_id]);
-    $schedule_activities = $stmt->fetchAll();
-    
     // Recent bookings (last 5)
     $stmt = $pdo->prepare("
         SELECT 
-            'New Booking' as action_type,
-            CONCAT('Booking ', bk.booking_reference, ' - Seat ', st.seat_number, ' for ', r.origin, ' to ', r.destination) as action_details,
+            'Booking Received' as action_type,
+            CONCAT('New booking from ', bk.passenger_name, ' - LKR ', bk.total_amount) as action_details,
             bk.booking_date as action_time,
             'booking_received' as action_category
         FROM bookings bk
         JOIN schedules s ON bk.schedule_id = s.schedule_id
         JOIN buses b ON s.bus_id = b.bus_id
-        JOIN routes r ON s.route_id = r.route_id
-        JOIN seats st ON bk.seat_id = st.seat_id
-        WHERE b.operator_id = ? 
-        AND bk.booking_status IN ('pending', 'confirmed')
+        WHERE b.operator_id = ?
         ORDER BY bk.booking_date DESC 
         LIMIT 5
     ");
     $stmt->execute([$user_id]);
     $booking_activities = $stmt->fetchAll();
     
-    // Combine all activities and sort by time
-    $all_activities = array_merge($bus_activities, $schedule_activities, $booking_activities);
-    
-    // Sort by action_time descending
-    usort($all_activities, function($a, $b) {
+    // Merge and sort activities
+    $recent_activities = array_merge($bus_activities, $booking_activities);
+    usort($recent_activities, function($a, $b) {
         return strtotime($b['action_time']) - strtotime($a['action_time']);
     });
-    
-    // Take only the most recent 8 activities
-    $recent_activities = array_slice($all_activities, 0, 8);
-    
-    // If no activities, show welcome message
-    if (empty($recent_activities)) {
-        $recent_activities = [
-            [
-                'action_type' => 'Welcome',
-                'action_details' => 'Welcome to Road Runner! Start by adding your first bus.',
-                'action_time' => date('Y-m-d H:i:s'),
-                'action_category' => 'welcome'
-            ]
-        ];
-    }
+    $recent_activities = array_slice($recent_activities, 0, 8);
     
 } catch (PDOException $e) {
     $error = "Error loading dashboard data: " . $e->getMessage();
-    $total_buses = 0;
-    $active_buses = 0;
-    $active_routes = 0;
-    $today_bookings = 0;
-    $total_revenue = 0;
+    $total_buses = $active_buses = $active_routes = $today_bookings = $total_revenue = 0;
+    $total_booking_revenue = $total_parcel_revenue = 0;
+    $operator_info = null;
     $recent_activities = [];
-}
-
-// Helper function to get time ago
-function timeAgo($datetime) {
-    $time = time() - strtotime($datetime);
-    
-    if ($time < 60) return 'Just now';
-    if ($time < 3600) return floor($time/60) . ' minutes ago';
-    if ($time < 86400) return floor($time/3600) . ' hours ago';
-    if ($time < 2592000) return floor($time/86400) . ' days ago';
-    return date('M j, Y', strtotime($datetime));
-}
-
-// Helper function to get activity icon
-function getActivityIcon($category) {
-    switch ($category) {
-        case 'bus_added': return '🚌';
-        case 'schedule_added': return '📅';
-        case 'booking_received': return '🎫';
-        case 'welcome': return '👋';
-        default: return '📋';
-    }
 }
 ?>
 
@@ -176,7 +148,6 @@ function getActivityIcon($category) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Operator Dashboard - Road Runner</title>
     <link rel="stylesheet" href="../assets/css/style.css">
-    
 </head>
 <body>
     <!-- Header -->
@@ -200,6 +171,8 @@ function getActivityIcon($category) {
                 <a href="buses.php">My Buses</a>
                 <a href="schedules.php">Routes & Schedules</a>
                 <a href="parcels.php">Parcel Management</a>
+                <a href="#" onclick="alert('Coming soon!')">Revenue Reports</a>
+                <a href="#" onclick="alert('Coming soon!')">Profile Settings</a>
             </div>
         </div>
     </div>
@@ -208,7 +181,7 @@ function getActivityIcon($category) {
     <main class="container">
         <!-- Welcome Message -->
         <div class="user_info mb_2">
-            Welcome to Operator Dashboard, <?php echo htmlspecialchars($_SESSION['user_name']); ?>!
+            Welcome back, <?php echo htmlspecialchars($_SESSION['user_name']); ?>! Ready to manage your bus operations?
         </div>
 
         <!-- Display Errors -->
@@ -219,7 +192,8 @@ function getActivityIcon($category) {
         <?php endif; ?>
 
         <!-- Statistics Cards -->
-        <div class="dashboard_grid">
+        <h3 class="mb_1">📊 Operations Overview</h3>
+        <div class="dashboard_grid mb_2">
             <div class="stat_card">
                 <div class="stat_number"><?php echo $total_buses; ?></div>
                 <div class="stat_label">Total Buses</div>
@@ -236,8 +210,51 @@ function getActivityIcon($category) {
             </div>
             
             <div class="stat_card">
-                <div class="stat_number">LKR <?php echo number_format($total_revenue); ?></div>
-                <div class="stat_label">Total Revenue</div>
+                <div class="stat_number" style="color: #3498db;"><?php echo $today_bookings; ?></div>
+                <div class="stat_label">Today's Bookings</div>
+            </div>
+        </div>
+
+        <!-- ADDED: Parcel System Statistics (matching admin dashboard) -->
+        <h3 class="mb_1">📦 Parcel System Status</h3>
+        <div class="dashboard_grid mb_2">
+            <div class="stat_card">
+                <div class="stat_number"><?php echo $parcel_revenue_stats['pending_parcels'] ?? 0; ?></div>
+                <div class="stat_label">Pending Parcels</div>
+            </div>
+            
+            <div class="stat_card">
+                <div class="stat_number"><?php echo $parcel_revenue_stats['in_transit_parcels'] ?? 0; ?></div>
+                <div class="stat_label">In Transit</div>
+            </div>
+            
+            <div class="stat_card">
+                <div class="stat_number"><?php echo $parcel_revenue_stats['delivered_parcels'] ?? 0; ?></div>
+                <div class="stat_label">Delivered</div>
+            </div>
+            
+            <div class="stat_card">
+                <div class="stat_number" style="color: #e74c3c;"><?php echo $parcel_revenue_stats['cancelled_parcels'] ?? 0; ?></div>
+                <div class="stat_label">Cancelled Parcels</div>
+            </div>
+        </div>
+
+        <!-- ADDED: Revenue Summary Section (similar to admin dashboard) -->
+        <div class="alert alert_success mb_2">
+            <h4>💰 Revenue Summary</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <div style="text-align: center;">
+                    <strong style="font-size: 1.5rem; color: #2c3e50;">LKR <?php echo number_format($total_booking_revenue); ?></strong><br>
+                    <span style="color: #666;">Bus Booking Revenue</span>
+                </div>
+                <div style="text-align: center;">
+                    <strong style="font-size: 1.5rem; color: #2c3e50;">LKR <?php echo number_format($total_parcel_revenue); ?></strong><br>
+                    <span style="color: #666;">Parcel Delivery Revenue</span>
+                </div>
+                <div style="text-align: center;">
+                    <strong style="font-size: 1.5rem; color: #27ae60;">LKR <?php echo number_format($total_revenue); ?></strong><br>
+                    <span style="color: #666;">Total Revenue</span>
+                </div>
             </div>
         </div>
 
@@ -269,10 +286,8 @@ function getActivityIcon($category) {
                             <span class="metric_label">Today's Bookings:</span>
                             <span class="metric_value" style="color: #3498db;"><?php echo $today_bookings; ?> booking<?php echo $today_bookings !== 1 ? 's' : ''; ?></span>
                         </div>
-                        <div class="dashboard_metric">
-                            <span class="metric_label">Account Status:</span>
-                            <span class="metric_value"><span class="badge badge_active">Active</span></span>
-                        </div>
+                    <?php else: ?>
+                        <p>Unable to load operator information.</p>
                     <?php endif; ?>
                 </div>
             </div>
@@ -280,24 +295,27 @@ function getActivityIcon($category) {
             <!-- Recent Activities -->
             <div class="table_container">
                 <h3 class="p_1 mb_1">Recent Activities</h3>
-                <div style="max-height: 400px; overflow-y: auto;">
+                <div style="padding: 1rem; max-height: 300px; overflow-y: auto;">
                     <?php if (!empty($recent_activities)): ?>
                         <?php foreach ($recent_activities as $activity): ?>
                             <div class="activity_item">
                                 <div class="activity_icon">
-                                    <?php echo getActivityIcon($activity['action_category']); ?>
+                                    <?php 
+                                    echo $activity['action_category'] === 'bus_added' ? '🚌' : 
+                                         ($activity['action_category'] === 'booking_received' ? '🎫' : '📋'); 
+                                    ?>
                                 </div>
                                 <div class="activity_content">
                                     <div class="activity_type"><?php echo htmlspecialchars($activity['action_type']); ?></div>
                                     <div class="activity_details"><?php echo htmlspecialchars($activity['action_details']); ?></div>
-                                    <div class="activity_time"><?php echo timeAgo($activity['action_time']); ?></div>
+                                    <div class="activity_time"><?php echo date('M j, g:i A', strtotime($activity['action_time'])); ?></div>
                                 </div>
                             </div>
                         <?php endforeach; ?>
                     <?php else: ?>
                         <div class="no_activities">
                             <p>No recent activities found.</p>
-                            <p><small>Your activities will appear here as you manage your buses and schedules.</small></p>
+                            <p><em>Start by adding buses or managing your schedules!</em></p>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -305,23 +323,24 @@ function getActivityIcon($category) {
         </div>
 
         <!-- Quick Actions -->
-        <div class="features_grid">
+        <h3 class="mb_1">🚀 Quick Actions</h3>
+        <div class="features_grid mb_2">
             <div class="feature_card">
                 <h4>🚌 Manage Buses</h4>
-                <p>Add new buses to your fleet, update bus information, and manage seating configurations.</p>
-                <button class="btn btn_primary" onclick="window.location.href='buses.php'">Manage Buses</button>
+                <p>Add new buses, update existing ones, and manage your fleet configuration.</p>
+                <a href="buses.php" class="btn btn_primary">Manage Buses</a>
             </div>
             
             <div class="feature_card">
-                <h4>🗺️ Routes & Schedules</h4>
-                <p>Create and manage your bus routes, set departure times, and update schedules.</p>
-                <button class="btn btn_primary" onclick="window.location.href='schedules.php'">Manage Routes</button>
+                <h4>📅 Schedules & Routes</h4>
+                <p>Set up travel schedules, define routes, and manage departure times.</p>
+                <a href="schedules.php" class="btn btn_primary">Manage Schedules</a>
             </div>
             
             <div class="feature_card">
-                <h4>📊 View Bookings</h4>
-                <p>Monitor current bookings, check passenger details, and manage seat assignments.</p>
-                <button class="btn btn_primary" onclick="alert('Coming soon!')">View Bookings</button>
+                <h4>📦 Parcel Management</h4>
+                <p>Track parcels on your routes and update delivery status for additional revenue.</p>
+                <a href="parcels.php" class="btn btn_primary">Manage Parcels</a>
             </div>
             
             <div class="feature_card">
@@ -346,7 +365,7 @@ function getActivityIcon($category) {
         <!-- Getting Started Guide -->
         <?php if ($total_buses === 0): ?>
         <div class="alert alert_info mt_2">
-            <h4>Getting Started as a Bus Operator</h4>
+            <h4>🚀 Getting Started as a Bus Operator</h4>
             <p><strong>Welcome to Road Runner!</strong> Here's how to get started:</p>
             <ol style="margin: 1rem 0; padding-left: 2rem;">
                 <li><strong>Add Your Buses:</strong> Register your buses with seating configuration</li>
@@ -361,12 +380,12 @@ function getActivityIcon($category) {
             <h4>🎉 Your Bus Operation is Active!</h4>
             <p>Great job! You have <strong><?php echo $total_buses; ?> bus(es)</strong> and <strong><?php echo $active_routes; ?> active schedule(s)</strong>. Keep monitoring your dashboard for new bookings and activity updates.</p>
             <div style="margin-top: 1rem;">
-                <strong>Quick Tips:</strong>
+                <strong>💡 Performance Insights:</strong>
                 <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-                    <li>Check recent activities to stay updated on bookings and system changes</li>
-                    <li>Monitor today's bookings and total revenue regularly</li>
+                    <li><strong>Total Revenue:</strong> LKR <?php echo number_format($total_revenue); ?> (Bookings: <?php echo number_format($total_booking_revenue); ?> + Parcels: <?php echo number_format($total_parcel_revenue); ?>)</li>
+                    <li><strong>Today's Activity:</strong> <?php echo $today_bookings; ?> new booking<?php echo $today_bookings !== 1 ? 's' : ''; ?></li>
+                    <li>Monitor recent activities to stay updated on bookings and system changes</li>
                     <li>Update schedules and pricing based on demand patterns</li>
-                    <li>Keep your bus information and contact details current</li>
                 </ul>
             </div>
         </div>
@@ -376,28 +395,28 @@ function getActivityIcon($category) {
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2025 Road Runner Operator Panel. All rights reserved.</p>
+            <p>&copy; 2025 Road Runner Operator Panel. Manage your bus operations with confidence!</p>
         </div>
     </footer>
 
     <script>
-        // Auto-refresh dashboard every 5 minutes to show latest activities
-        setTimeout(function() {
-            location.reload();
+        // Auto-refresh dashboard statistics every 5 minutes
+        setInterval(function() {
+            if (document.hasFocus()) {
+                location.reload();
+            }
         }, 300000); // 5 minutes
-
-        // Add smooth animations to stat cards
+        
+        // Add visual feedback for buttons
         document.addEventListener('DOMContentLoaded', function() {
-            const statCards = document.querySelectorAll('.stat_card');
-            statCards.forEach((card, index) => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                
-                setTimeout(() => {
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, index * 100);
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 100);
+                });
             });
         });
     </script>
