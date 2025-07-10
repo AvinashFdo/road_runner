@@ -181,39 +181,6 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View All Bookings - Road Runner Operator</title>
     <link rel="stylesheet" href="../assets/css/style.css">
-    <style>
-        .tab_container {
-            margin: 2rem 0;
-        }
-
-        .tab_buttons {
-            display: flex;
-            border-bottom: 2px solid #ddd;
-            margin-bottom: 1rem;
-        }
-
-        .tab_button {
-            padding: 1rem 2rem;
-            background: #f8f9fa;
-            border: none;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: bold;
-        }
-
-        .tab_button.active {
-            background: #f39c12;
-            color: white;
-        }
-
-        .tab_content {
-            display: none;
-        }
-
-        .tab_content.active {
-            display: block;
-        }
-    </style>
 </head>
 
 <body>

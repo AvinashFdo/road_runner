@@ -232,33 +232,6 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parcel Management - Road Runner Admin</title>
     <link rel="stylesheet" href="../assets/css/style.css">
-    <style>
-        .parcel-card {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            background: white;
-        }
-
-        .parcel-header {
-            display: flex;
-            justify-content: between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .parcel-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-        }
-
-        .status-update-form {
-            display: inline-block;
-            margin-right: 0.5rem;
-        }
-    </style>
 </head>
 
 <body>

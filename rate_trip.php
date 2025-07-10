@@ -113,58 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rate Your Trip - Road Runner</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <style>
-        .rating-stars {
-            display: flex;
-            gap: 0.5rem;
-            margin: 1rem 0;
-            justify-content: center;
-        }
-
-        .rating-star {
-            font-size: 2rem;
-            color: #ddd;
-            cursor: pointer;
-            transition: color 0.2s ease;
-        }
-
-        .rating-star:hover,
-        .rating-star.selected {
-            color: #ffc107;
-        }
-
-        .trip-info {
-            background: #f8f9fa;
-            padding: 2rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-        }
-
-        .trip-info h3 {
-            color: #2c3e50;
-            margin-bottom: 1rem;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-        }
-
-        .existing-review {
-            background: #e8f5e8;
-            border: 1px solid #d4edda;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .review-rating {
-            color: #ffc107;
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-        }
-    </style>
+    
 </head>
 
 <body>

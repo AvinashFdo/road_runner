@@ -562,42 +562,6 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
         });
     </script>
 
-    <style>
-        /* Print styles */
-        @media print {
-
-            .header,
-            .footer,
-            .btn,
-            button,
-            .alert:not(.alert_success):not(.alert_info) {
-                display: none !important;
-            }
-
-            .container {
-                max-width: none !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-
-            .table_container {
-                border: 1px solid #333 !important;
-                margin-bottom: 1rem !important;
-                page-break-inside: avoid;
-            }
-
-            body {
-                font-size: 12pt !important;
-                line-height: 1.4 !important;
-            }
-
-            h2,
-            h3,
-            h4 {
-                color: #000 !important;
-            }
-        }
-    </style>
 </body>
 
 </html>
