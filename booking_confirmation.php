@@ -286,14 +286,18 @@ if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
 
             <!-- Action Buttons -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0;">
-                <a href="?<?php echo http_build_query($_GET); ?>&download=ticket" class="btn btn_primary" style="text-align: center;">
+                <a href="?booking_refs=<?php echo urlencode(implode(',', $booking_references)); ?>&download=ticket" 
+                   class="btn btn_primary" style="text-align: center;">
                     📄 Download Tickets
                 </a>
-                <a href="search_buses.php" class="btn btn_success" style="text-align: center;">
-                    🔍 Book Another Trip
+                <button onclick="window.print()" class="btn btn_success" style="text-align: center;">
+                    🖨️ Print Details
+                </button>
+                <a href="my_bookings.php" class="btn" style="text-align: center; background: #6c757d;">
+                    📋 My Bookings
                 </a>
-                <a href="my_bookings.php" class="btn" style="text-align: center; background: #34495e;">
-                    📋 View All Bookings
+                <a href="search_buses.php" class="btn" style="text-align: center; background: #34495e;">
+                    🔍 Book Another Trip
                 </a>
             </div>
 
@@ -306,5 +310,51 @@ if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
             <p>&copy; 2025 Road Runner. Thank you for your booking!</p>
         </div>
     </footer>
+
+    <script>
+        // Copy booking reference to clipboard
+        document.addEventListener('DOMContentLoaded', function() {
+            const bookingRef = document.querySelector('div[style*="font-family: monospace"]');
+            if (bookingRef) {
+                bookingRef.style.cursor = 'pointer';
+                bookingRef.title = 'Click to copy booking reference';
+                bookingRef.addEventListener('click', function() {
+                    navigator.clipboard.writeText(this.textContent.trim()).then(function() {
+                        alert('Booking reference copied to clipboard!');
+                    });
+                });
+            }
+        });
+    </script>
+
+    <style>
+        /* Print styles */
+        @media print {
+            .header, .footer, .btn, button, .alert:not(.alert_success):not(.alert_info) {
+                display: none !important;
+            }
+            
+            .container {
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .table_container {
+                border: 1px solid #333 !important;
+                margin-bottom: 1rem !important;
+                page-break-inside: avoid;
+            }
+            
+            body {
+                font-size: 12pt !important;
+                line-height: 1.4 !important;
+            }
+            
+            h2, h3, h4 {
+                color: #000 !important;
+            }
+        }
+    </style>
 </body>
 </html>

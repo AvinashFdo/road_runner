@@ -119,9 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['book_seats'])) {
         
         if ($valid) {
             try {
-                $pdo->beginTransaction();
-                
-                // Check seat availability
+                // Check seat availability one more time
                 foreach ($selected_seats as $seat_id) {
                     $stmt = $pdo->prepare("SELECT booking_id FROM bookings WHERE seat_id = ? AND travel_date = ? AND booking_status IN ('pending', 'confirmed')");
                     $stmt->execute([$seat_id, $travel_date]);
@@ -130,51 +128,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['book_seats'])) {
                     }
                 }
                 
-                $booking_references = [];
-                
-                // Create bookings
-                foreach ($passengers as $passenger) {
-                    // Generate unique booking reference
-                    do {
-                        $booking_ref = 'RR' . date('ymd') . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
-                        $stmt = $pdo->prepare("SELECT booking_id FROM bookings WHERE booking_reference = ?");
-                        $stmt->execute([$booking_ref]);
-                    } while ($stmt->fetch());
-                    
-                    // Create booking
-                    $stmt = $pdo->prepare("
-                        INSERT INTO bookings 
-                        (booking_reference, passenger_id, schedule_id, seat_id, passenger_name, passenger_phone, passenger_gender, travel_date, total_amount, booking_status, payment_status) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', 'pending')
-                    ");
-                    $stmt->execute([
-                        $booking_ref,
-                        $_SESSION['user_id'],
-                        $schedule_id,
-                        $passenger['seat_id'],
-                        $passenger['name'],
-                        $user_phone,
-                        $passenger['gender'],
-                        $travel_date,
-                        $bus_info['base_price']
-                    ]);
-                    
-                    $booking_references[] = $booking_ref;
+                // Get seat numbers for the selected seats
+                foreach ($passengers as &$passenger) {
+                    $stmt = $pdo->prepare("SELECT seat_number FROM seats WHERE seat_id = ?");
+                    $stmt->execute([$passenger['seat_id']]);
+                    $seat_info = $stmt->fetch();
+                    $passenger['seat_number'] = $seat_info ? $seat_info['seat_number'] : 'Unknown';
                 }
                 
-                $pdo->commit();
+                // Store booking data in session for payment processing
+                $_SESSION['pending_booking'] = [
+                    'schedule_id' => $schedule_id,
+                    'travel_date' => $travel_date,
+                    'passengers' => $passengers,
+                    'user_phone' => $user_phone,
+                    'base_price' => $bus_info['base_price'],
+                    'bus_name' => $bus_info['bus_name'],
+                    'bus_number' => $bus_info['bus_number'],
+                    'route_name' => $bus_info['route_name'],
+                    'origin' => $bus_info['origin'],
+                    'destination' => $bus_info['destination']
+                ];
                 
-                // Redirect to confirmation
-                header('Location: booking_confirmation.php?booking_refs=' . implode(',', $booking_references));
+                // Redirect to payment page
+                header('Location: payment.php');
                 exit();
                 
             } catch (Exception $e) {
-                $pdo->rollback();
-                $error = "Booking failed: " . $e->getMessage();
+                $error = "Validation failed: " . $e->getMessage();
             }
         }
     }
 }
+
 
 // Calculate seat layout
 $config = explode('x', $bus_info['seat_configuration'] ?? '2x2');
@@ -314,6 +300,15 @@ $total_rows = ceil(count($seats) / $seats_per_row);
                             <div class="legend_seat" style="background: #4caf50; border-color: #4caf50;"></div>
                             <span>Selected</span>
                         </div>
+                    </div>
+
+                    <div class="alert alert_info" style="margin: 2rem 0;">
+                        <h4>💳 Payment Options Available</h4>
+                        <p>After selecting your seats, you can choose to:</p>
+                        <ul style="margin: 0.5rem 0; padding-left: 2rem;">
+                            <li><strong>Pay Now:</strong> Complete payment online with your card for instant confirmation</li>
+                            <li><strong>Pay Later:</strong> Reserve seats and pay at the bus station (seats held for 2 hours)</li>
+                        </ul>
                     </div>
                 </div>
             </div>

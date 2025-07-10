@@ -22,7 +22,10 @@ if (!empty($tracking_number)) {
         // Get parcel information
         $stmt = $pdo->prepare("
             SELECT 
-                p.*,
+                p.parcel_id, p.tracking_number, p.sender_id, p.sender_name, p.sender_phone,
+                p.receiver_name, p.receiver_phone, p.receiver_address, p.route_id,
+                p.weight_kg, p.parcel_type, p.delivery_cost, p.travel_date, p.status,
+                p.payment_status, p.created_at, p.updated_at,
                 r.route_name, r.origin, r.destination, r.distance_km, r.estimated_duration,
                 u.full_name as sender_full_name, u.email as sender_email
             FROM parcels p
@@ -484,7 +487,14 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $parcel_info)
                         </div>
                         <div>
                             <p><strong>Delivery Cost:</strong> <span style="color: #2c3e50; font-weight: bold;">LKR <?php echo number_format($parcel_info['delivery_cost'], 2); ?></span></p>
-                            <p><strong>Payment Status:</strong> <span class="badge badge_active">Paid</span></p>
+                            <p><strong>Payment Status:</strong> 
+                                <?php 
+                                $payment_status = isset($parcel_info['payment_status']) ? $parcel_info['payment_status'] : 'pending';
+                                $badge_class = ($payment_status === 'paid') ? 'badge_active' : 'badge_operator';
+                                $status_text = ucfirst($payment_status);
+                                ?>
+                                <span class="badge <?php echo $badge_class; ?>"><?php echo $status_text; ?></span>
+                            </p>
                         </div>
                     </div>
                 </div>

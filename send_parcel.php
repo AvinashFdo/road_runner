@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_parcel'])) {
         $error = "Phone numbers must be 10 digits.";
     } else {
         try {
-            // Calculate delivery cost based on weight and distance
+            // Get route information for cost calculation
             $stmt = $pdo->prepare("SELECT distance_km, route_name, origin, destination FROM routes WHERE route_id = ? AND status = 'active'");
             $stmt->execute([$route_id]);
             $route_info = $stmt->fetch();
@@ -50,42 +50,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_parcel'])) {
             if (!$route_info) {
                 $error = "Selected route is not available.";
             } else {
-                // Calculate cost: Base rate + weight rate + distance rate
+                // Calculate delivery cost: Base rate + weight rate + distance rate
                 $base_rate = 500; // LKR 500 base rate
                 $weight_rate = $weight_kg * 50; // LKR 50 per kg
                 $distance_rate = $route_info['distance_km'] * 2; // LKR 2 per km
                 $delivery_cost = $base_rate + $weight_rate + $distance_rate;
                 
-                // Generate unique tracking number
-                $attempts = 0;
-                do {
-                    $tracking_number = 'PRR' . date('ymd') . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
-                    $stmt = $pdo->prepare("SELECT parcel_id FROM parcels WHERE tracking_number = ?");
-                    $stmt->execute([$tracking_number]);
-                    $attempts++;
-                    
-                    if ($attempts > 10) {
-                        throw new Exception("Unable to generate unique tracking number. Please try again.");
-                    }
-                } while ($stmt->fetch());
+                // Store parcel data in session for payment processing
+                $_SESSION['pending_parcel'] = [
+                    'route_id' => $route_id,
+                    'sender_name' => $sender_name,
+                    'sender_phone' => $sender_phone,
+                    'receiver_name' => $receiver_name,
+                    'receiver_phone' => $receiver_phone,
+                    'receiver_address' => $receiver_address,
+                    'travel_date' => $travel_date,
+                    'weight_kg' => $weight_kg,
+                    'parcel_type' => $parcel_type,
+                    'parcel_description' => $parcel_description,
+                    'delivery_cost' => $delivery_cost,
+                    'route_name' => $route_info['route_name'],
+                    'origin' => $route_info['origin'],
+                    'destination' => $route_info['destination'],
+                    'distance_km' => $route_info['distance_km']
+                ];
                 
-                // Insert parcel booking
-                $stmt = $pdo->prepare("
-                    INSERT INTO parcels 
-                    (tracking_number, sender_id, sender_name, sender_phone, receiver_name, 
-                     receiver_phone, receiver_address, route_id, weight_kg, parcel_type, 
-                     delivery_cost, travel_date, status) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-                ");
-                $stmt->execute([
-                    $tracking_number, $user_id, $sender_name, $sender_phone,
-                    $receiver_name, $receiver_phone, $receiver_address,
-                    $route_id, $weight_kg, $parcel_type ?: 'General',
-                    $delivery_cost, $travel_date
-                ]);
-                
-                // Redirect to confirmation page
-                header('Location: parcel_confirmation.php?tracking=' . $tracking_number);
+                // Redirect to payment page
+                header('Location: parcel_payment.php');
                 exit();
             }
         } catch (PDOException $e) {
@@ -387,6 +378,14 @@ try {
                     <a href="my_parcels.php">My Parcels</a>
                 </p>
             </form>
+            <div class="alert alert_info" style="margin: 2rem 0;">
+                <h4>💳 Payment Options Available</h4>
+                <p>After filling the parcel details, you can choose to:</p>
+                <ul style="margin: 0.5rem 0; padding-left: 2rem;">
+                    <li><strong>Pay Now:</strong> Complete payment online with your card for instant confirmation</li>
+                    <li><strong>Pay at Pickup:</strong> Book now and pay when you drop off the parcel at the station</li>
+                </ul>
+            </div>
         </div>
     </main>
 

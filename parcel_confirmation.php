@@ -23,9 +23,12 @@ $error = '';
 
 try {
     // Get parcel information
-    $stmt = $pdo->prepare("
+     $stmt = $pdo->prepare("
         SELECT 
-            p.*,
+            p.parcel_id, p.tracking_number, p.sender_id, p.sender_name, p.sender_phone,
+            p.receiver_name, p.receiver_phone, p.receiver_address, p.route_id,
+            p.weight_kg, p.parcel_type, p.delivery_cost, p.travel_date, p.status,
+            p.payment_status, p.created_at, p.updated_at,
             r.route_name, r.origin, r.destination, r.distance_km, r.estimated_duration,
             u.full_name as sender_full_name, u.email as sender_email
         FROM parcels p
@@ -54,6 +57,7 @@ function generateTrackingReceipt($parcel_info) {
     $content .= "Tracking Number: " . $parcel_info['tracking_number'] . "\n";
     $content .= "Booking Date: " . date('F j, Y \a\t g:i A', strtotime($parcel_info['created_at'])) . "\n";
     $content .= "Status: " . ucfirst($parcel_info['status']) . "\n";
+    $content .= "Payment Status: " . ucfirst($parcel_info['payment_status'] ?? 'pending') . "\n";
     $content .= "Delivery Date: " . date('F j, Y', strtotime($parcel_info['travel_date'])) . "\n";
     
     $content .= "\n=====================================\n";
@@ -290,8 +294,30 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt') {
                             LKR <?php echo number_format($parcel_info['delivery_cost'], 2); ?>
                         </div>
                         <div>
-                            <strong>Payment Status:</strong><br>
-                            <span class="badge badge_active">Paid</span>
+                            <p><strong>Payment Status:</strong> 
+                                <?php 
+                                // Check if we came from payment success
+                                $is_payment_success = isset($_GET['payment']) && $_GET['payment'] === 'success';
+                                
+                                // Get payment status from database or default based on payment flow
+                                if (isset($parcel_info['payment_status'])) {
+                                    $payment_status = $parcel_info['payment_status'];
+                                } else {
+                                    // Fallback: if payment=success in URL, assume paid, otherwise pending
+                                    $payment_status = $is_payment_success ? 'paid' : 'pending';
+                                }
+                                
+                                $badge_class = ($payment_status === 'paid') ? 'badge_active' : 'badge_operator';
+                                $status_text = ucfirst($payment_status);
+                                ?>
+                                <span class="badge <?php echo $badge_class; ?>"><?php echo $status_text; ?></span>
+                                
+                                <?php if ($payment_status === 'pending'): ?>
+                                    <br><small style="color: #e74c3c;">Payment required when dropping off parcel</small>
+                                <?php else: ?>
+                                    <br><small style="color: #27ae60;">Payment completed online</small>
+                                <?php endif; ?>
+                            </p>
                         </div>
                     </div>
                 </div>
