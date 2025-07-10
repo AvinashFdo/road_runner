@@ -312,29 +312,7 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt') {
                 </a>
             </div>
 
-            <!-- Important Information -->
-            <div class="alert alert_info">
-                <h4>📝 Important Instructions</h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                    <div>
-                        <strong>🚌 Drop-off:</strong><br>
-                        Bring your parcel to <?php echo htmlspecialchars($parcel_info['origin']); ?> bus station 30 minutes before departure on <?php echo date('F j, Y', strtotime($parcel_info['travel_date'])); ?>.
-                    </div>
-                    <div>
-                        <strong>📱 Tracking:</strong><br>
-                        Use tracking number <code><?php echo htmlspecialchars($parcel_info['tracking_number']); ?></code> to monitor your parcel's journey.
-                    </div>
-                    <div>
-                        <strong>📞 Contact:</strong><br>
-                        Call +94 11 123 4567 for support or email parcels@roadrunner.lk for assistance.
-                    </div>
-                    <div>
-                        <strong>🛡️ Insurance:</strong><br>
-                        Your parcel is insured up to LKR 10,000. Keep this confirmation for claims.
-                    </div>
-                </div>
-            </div>
-
+            
         <?php endif; ?>
     </main>
 

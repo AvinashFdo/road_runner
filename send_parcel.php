@@ -140,6 +140,7 @@ try {
                         <li><a href="passenger/dashboard.php">My Dashboard</a></li>
                     <?php endif; ?>
                     <li><a href="search_buses.php">Search Buses</a></li>
+                    <li><a href="send_parcel.php">Parcel</a></li>
                     <li><a href="my_bookings.php">My Bookings</a></li>
                     <li><a href="my_parcels.php">My Parcels</a></li>
                     <li><a href="logout.php">Logout</a></li>
@@ -386,20 +387,6 @@ try {
                     <a href="my_parcels.php">My Parcels</a>
                 </p>
             </form>
-        </div>
-
-        <!-- Terms and Conditions -->
-        <div class="alert alert_info mt_2">
-            <h4>📋 Terms and Conditions</h4>
-            <ul style="margin: 1rem 0; padding-left: 2rem;">
-                <li>Maximum weight limit: 50kg per parcel</li>
-                <li>Prohibited items: Hazardous materials, liquids, perishable food items, illegal items</li>
-                <li>Delivery time: Same day as bus arrival (subject to bus schedule)</li>
-                <li>Insurance: Up to LKR 10,000 coverage included (additional insurance available)</li>
-                <li>Pickup: From destination bus station within 24 hours of arrival</li>
-                <li>Tracking: Real-time updates via SMS and online tracking</li>
-                <li>Payment: Cash on delivery or advance payment accepted</li>
-            </ul>
         </div>
     </main>
 

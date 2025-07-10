@@ -148,7 +148,9 @@ if ($search_performed && !empty($search_results)) {
                         <li><a href="passenger/dashboard.php">My Dashboard</a></li>
                     <?php endif; ?>
                     <li><a href="search_buses.php">Search Buses</a></li>
+                    <li><a href="send_parcel.php">Parcel</a></li>
                     <li><a href="my_bookings.php">My Bookings</a></li>
+                    <li><a href="my_parcels.php">My Parcels</a></li>
                     <li><a href="logout.php">Logout</a></li>
                 </ul>
             </nav>
@@ -349,29 +351,6 @@ if ($search_performed && !empty($search_results)) {
             <?php endif; ?>
         </div>
         <?php endif; ?>
-
-        <!-- Search Tips -->
-        <div class="alert alert_info">
-            <h4>🔍 Search Tips</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                <div>
-                    <strong>Flexible Locations:</strong><br>
-                    Try different spellings or nearby areas if no results found.
-                </div>
-                <div>
-                    <strong>Book Early:</strong><br>
-                    Popular routes fill up quickly, especially on weekends and holidays.
-                </div>
-                <div>
-                    <strong>Compare Options:</strong><br>
-                    Check different times and bus types to find the best deal.
-                </div>
-                <div>
-                    <strong>Seat Selection:</strong><br>
-                    Our gender-based visualization helps you choose comfortable seats.
-                </div>
-            </div>
-        </div>
     </main>
 
     <!-- Footer -->

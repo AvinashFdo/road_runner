@@ -130,7 +130,9 @@ try {
                     <li><a href="../index.php">Home</a></li>
                     <li><a href="dashboard.php">My Dashboard</a></li>
                     <li><a href="../search_buses.php">Search Buses</a></li>
+                    <li><a href="../send_parcel.php">Parcel</a></li>
                     <li><a href="../my_bookings.php">My Bookings</a></li>
+                    <li><a href="../my_parcels.php">My Parcels</a></li>
                     <li><a href="../logout.php">Logout</a></li>
                 </ul>
             </nav>
@@ -302,28 +304,6 @@ try {
                         <li>Change your password if you suspect it has been compromised</li>
                     </ul>
                 </div>
-            </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="features_grid mt_2">
-            
-            <div class="feature_card">
-                <h4>🎫 My Bookings</h4>
-                <p>View your current and past bookings, cancel trips, and download tickets.</p>
-                <a href="../my_bookings.php" class="btn btn_primary">View Bookings</a>
-            </div>
-            
-            <div class="feature_card">
-                <h4>🔍 Book New Trip</h4>
-                <p>Search for buses and book your next journey with our smart seat selection.</p>
-                <a href="../search_buses.php" class="btn btn_primary">Search Buses</a>
-            </div>
-            
-            <div class="feature_card">
-                <h4>🆘 Need Help?</h4>
-                <p>Contact our support team if you have questions about your account or bookings.</p>
-                <button class="btn btn_success" onclick="alert('Support: +94 11 123 4567 | Email: support@roadrunner.lk')">Get Support</button>
             </div>
         </div>
     </main>

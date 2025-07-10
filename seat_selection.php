@@ -201,7 +201,9 @@ $total_rows = ceil(count($seats) / $seats_per_row);
                 <ul class="nav_links">
                     <li><a href="index.php">Home</a></li>
                     <li><a href="search_buses.php">Search Buses</a></li>
+                    <li><a href="send_parcel.php">Parcel</a></li>
                     <li><a href="my_bookings.php">My Bookings</a></li>
+                    <li><a href="my_parcels.php">My Parcels</a></li>
                     <li><a href="logout.php">Logout</a></li>
                 </ul>
             </nav>
@@ -352,18 +354,6 @@ $total_rows = ceil(count($seats) / $seats_per_row);
                 </p>
             </div>
         </div>
-
-        <!-- Instructions -->
-        <div class="alert alert_info mt_2">
-            <h4>How to Book</h4>
-            <ol style="margin: 1rem 0; padding-left: 2rem;">
-                <li>Click "Add Passenger" and enter passenger details</li>
-                <li>Click on available seats (gray) to select them</li>
-                <li>Blue seats = Male passengers, Pink seats = Female passengers</li>
-                <li>Review your selection and click "Book Seats"</li>
-            </ol>
-        </div>
-
         <?php endif; ?>
     </main>
 

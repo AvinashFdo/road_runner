@@ -155,10 +155,13 @@ if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
             <nav class="nav">
                 <div class="logo">🚌 Road Runner</div>
                 <ul class="nav_links">
-                    <li><a href="index.php">Home</a></li>
-                    <li><a href="search_buses.php">Search Buses</a></li>
-                    <li><a href="my_bookings.php">My Bookings</a></li>
-                    <li><a href="logout.php">Logout</a></li>
+                    <li><a href="../index.php">Home</a></li>
+                    <li><a href="dashboard.php">My Dashboard</a></li>
+                    <li><a href="../search_buses.php">Search Buses</a></li>
+                    <li><a href="send_parcel.php">Parcel</a></li>
+                    <li><a href="../my_bookings.php">My Bookings</a></li>
+                    <li><a href="../my_parcels.php">My Parcels</a></li>
+                    <li><a href="../logout.php">Logout</a></li>
                 </ul>
             </nav>
         </div>
@@ -294,31 +297,7 @@ if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
                 </a>
             </div>
 
-            <!-- Important Information -->
-            <div class="alert alert_info">
-                <h4>📋 Important Information</h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                    <div>
-                        <strong>Before Travel:</strong><br>
-                        • Arrive 15 minutes early<br>
-                        • Bring valid photo ID<br>
-                        • Keep booking references safe
-                    </div>
-                    <div>
-                        <strong>Cancellation:</strong><br>
-                        • Free cancellation up to 2 hours before<br>
-                        • Contact operator for changes<br>
-                        • Refunds processed in 3-5 days
-                    </div>
-                    <div>
-                        <strong>Support:</strong><br>
-                        • Operator: <?php echo htmlspecialchars($trip_info['operator_phone']); ?><br>
-                        • Road Runner: +94 11 123 4567<br>
-                        • Email: support@roadrunner.lk
-                    </div>
-                </div>
-            </div>
-
+            
         <?php endif; ?>
     </main>
 

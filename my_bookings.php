@@ -248,6 +248,7 @@ function getBookingStatusDisplay($status) {
                         <li><a href="passenger/dashboard.php">My Dashboard</a></li>
                     <?php endif; ?>
                     <li><a href="search_buses.php">Search Buses</a></li>
+                    <li><a href="send_parcel.php">Parcel</a></li>
                     <li><a href="my_bookings.php">My Bookings</a></li>
                     <li><a href="my_parcels.php">My Parcels</a></li>
                     <li><a href="logout.php">Logout</a></li>
@@ -562,25 +563,6 @@ function getBookingStatusDisplay($status) {
                     </div>
                 <?php endforeach; ?>
             <?php endif; ?>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="features_grid mt_2">
-            <div class="feature_card">
-                <h4>🔍 Search Buses</h4>
-                <p>Find and book your next bus journey with our easy-to-use search system.</p>
-                <a href="search_buses.php" class="btn btn_primary">Search Buses</a>
-            </div>
-            <div class="feature_card">
-                <h4>📦 Send Parcels</h4>
-                <p>Send parcels along with our bus routes for reliable and affordable delivery.</p>
-                <a href="send_parcel.php" class="btn btn_success">Send Parcel</a>
-            </div>
-            <div class="feature_card">
-                <h4>📞 Need Help?</h4>
-                <p>Contact our support team for assistance with your bookings or cancellations.</p>
-                <button class="btn btn_success" onclick="alert('Support: +94 11 123 4567 | Email: support@roadrunner.lk')">Get Support</button>
-            </div>
         </div>
     </main>
 

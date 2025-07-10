@@ -187,7 +187,9 @@ function getHorizontalSeatNumber($seatNumber, $busId, $pdo) {
                     <li><a href="../index.php">Home</a></li>
                     <li><a href="dashboard.php">My Dashboard</a></li>
                     <li><a href="../search_buses.php">Search Buses</a></li>
+                    <li><a href="../send_parcel.php">Parcel</a></li>
                     <li><a href="../my_bookings.php">My Bookings</a></li>
+                    <li><a href="../my_parcels.php">My Parcels</a></li>
                     <li><a href="../logout.php">Logout</a></li>
                 </ul>
             </nav>
@@ -239,9 +241,6 @@ function getHorizontalSeatNumber($seatNumber, $busId, $pdo) {
                 </button>
                 <button class="tab_btn" onclick="showTab('profile')" id="profile-tab">
                     Profile
-                </button>
-                <button class="tab_btn" onclick="showTab('refunds')" id="refunds-tab">
-                    Refund History (<?php echo count($refund_history); ?>)
                 </button>
             </div>
         </div>
@@ -357,111 +356,6 @@ function getHorizontalSeatNumber($seatNumber, $busId, $pdo) {
                         <a href="edit_profile.php" class="btn btn_primary">Edit Profile</a>
                     </div>
                 <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- Refund History Tab -->
-        <div id="refunds-content" class="tab_content">
-            <h3 class="mb_1">Refund History</h3>
-            
-            <?php if (empty($refund_history)): ?>
-                <div class="alert alert_info">
-                    <h4>No Refund History</h4>
-                    <p>You haven't cancelled any bookings yet. Your cancelled bookings and refund status will appear here.</p>
-                </div>
-            <?php else: ?>
-                <div class="table_container">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Booking Details</th>
-                                <th>Trip Information</th>
-                                <th>Amount</th>
-                                <th>Refund Status</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($refund_history as $refund): ?>
-                                <tr>
-                                    <td>
-                                        <strong><?php echo htmlspecialchars($refund['booking_reference']); ?></strong><br>
-                                        <small>Passenger: <?php echo htmlspecialchars($refund['passenger_name']); ?></small><br>
-                                        <small>Seat: <?php echo $refund['horizontal_seat_number']; ?></small>
-                                    </td>
-                                    <td>
-                                        <strong><?php echo htmlspecialchars($refund['route_name']); ?></strong><br>
-                                        <small><?php echo htmlspecialchars($refund['origin']); ?> → <?php echo htmlspecialchars($refund['destination']); ?></small><br>
-                                        <small><?php echo date('M j, Y g:i A', strtotime($refund['travel_date'] . ' ' . $refund['departure_time'])); ?></small><br>
-                                        <small>Bus: <?php echo htmlspecialchars($refund['bus_name']); ?> (<?php echo htmlspecialchars($refund['bus_number']); ?>)</small>
-                                    </td>
-                                    <td>
-                                        <strong style="color: #e74c3c;">LKR <?php echo number_format($refund['total_amount']); ?></strong>
-                                    </td>
-                                    <td>
-                                        <?php if ($refund['refund_status'] === 'Processing'): ?>
-                                            <span class="badge badge_operator">Processing</span><br>
-                                            <small style="color: #666; margin-top: 0.25rem; display: block;">
-                                                Expected: 3-5 business days
-                                            </small>
-                                        <?php else: ?>
-                                            <span class="badge badge_active">Completed</span><br>
-                                            <small style="color: #27ae60; margin-top: 0.25rem; display: block;">
-                                                Refund processed
-                                            </small>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <strong>Cancelled:</strong><br>
-                                        <?php echo date('M j, Y', strtotime($refund['booking_date'])); ?><br>
-                                        <small><?php echo date('g:i A', strtotime($refund['booking_date'])); ?></small>
-                                        
-                                        <?php if ($refund['refund_status'] === 'Completed'): ?>
-                                            <br><br><strong>Refunded:</strong><br>
-                                            <?php echo date('M j, Y', strtotime($refund['updated_at'])); ?><br>
-                                            <small><?php echo date('g:i A', strtotime($refund['updated_at'])); ?></small>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Refund Summary -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
-                    <div class="stat_card">
-                        <div class="stat_number"><?php echo $cancelled_bookings; ?></div>
-                        <div class="stat_label">Pending Refunds</div>
-                    </div>
-                    <div class="stat_card">
-                        <div class="stat_number"><?php echo $refunded_bookings; ?></div>
-                        <div class="stat_label">Completed Refunds</div>
-                    </div>
-                </div>
-            <?php endif; ?>
-        </div>
-
-        <!-- Travel Tips -->
-        <div class="alert alert_info mt_2">
-            <h4>🌟 Travel Tips for Road Runner</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                <div>
-                    <strong>🎯 Smart Seat Selection:</strong><br>
-                    Use our gender-based seat visualization to choose seats that ensure your comfort and privacy.
-                </div>
-                <div>
-                    <strong>📱 Digital Tickets:</strong><br>
-                    Download your tickets to your phone. No need to print - just show your digital ticket when boarding.
-                </div>
-                <div>
-                    <strong>⏰ Arrive Early:</strong><br>
-                    Arrive at the departure point at least 15 minutes before scheduled departure time.
-                </div>
-                <div>
-                    <strong>💰 Refund Policy:</strong><br>
-                    Free cancellation up to 2 hours before departure. Refunds processed within 3-5 business days.
-                </div>
             </div>
         </div>
     </main>

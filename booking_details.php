@@ -244,6 +244,7 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
                         <li><a href="passenger/dashboard.php">My Dashboard</a></li>
                     <?php endif; ?>
                     <li><a href="search_buses.php">Search Buses</a></li>
+                    <li><a href="send_parcel.php">Parcel</a></li>
                     <li><a href="my_bookings.php">My Bookings</a></li>
                     <li><a href="my_parcels.php">My Parcels</a></li>
                     <li><a href="logout.php">Logout</a></li>
@@ -514,28 +515,7 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $booking_deta
                 </a>
             </div>
 
-            <!-- Important Notes -->
-            <div class="alert alert_info">
-                <h4>📝 Important Travel Information</h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                    <div>
-                        <strong>📍 Departure:</strong><br>
-                        Arrive at <?php echo htmlspecialchars($booking_details['origin']); ?> 15 minutes before departure time.
-                    </div>
-                    <div>
-                        <strong>🆔 Documentation:</strong><br>
-                        Bring a valid ID for verification. Keep your booking reference handy.
-                    </div>
-                    <div>
-                        <strong>📞 Contact Operator:</strong><br>
-                        Call <?php echo htmlspecialchars($booking_details['operator_phone']); ?> for any schedule changes or queries.
-                    </div>
-                    <div>
-                        <strong>❌ Cancellation:</strong><br>
-                        Cancellation allowed up to 2 hours before departure time.
-                    </div>
-                </div>
-            </div>
+           
 
         <?php endif; ?>
     </main>

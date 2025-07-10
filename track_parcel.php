@@ -311,7 +311,7 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $parcel_info)
                 <div class="logo">🚌 Road Runner</div>
                 <ul class="nav_links">
                     <li><a href="index.php">Home</a></li>
-                    <li><a href="send_parcel.php">Send Parcel</a></li>
+                    <li><a href="send_parcel.php">Parcel</a></li>
                     <?php if (isset($_SESSION['user_id'])): ?>
                         <li><a href="my_parcels.php">My Parcels</a></li>
                         <?php if ($_SESSION['user_type'] === 'passenger'): ?>
@@ -538,42 +538,15 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt' && $parcel_info)
                 </a>
                 
                 <?php if ($delivery_status['status'] !== 'cancelled' && $delivery_status['status'] !== 'delivered'): ?>
-                    <a href="mailto:parcels@roadrunner.lk?subject=Support Request - <?php echo urlencode($tracking_number); ?>" 
-                       class="btn btn_primary">
-                        📞 Contact Support
-                    </a>
+                    <button class="btn btn_success" onclick="alert('Support: Call +94 11 123 4567')">📞 Contact Support</button>                   
                 <?php endif; ?>
                 
                 <?php if ($delivery_status['status'] === 'cancelled'): ?>
-                    <a href="mailto:support@roadrunner.lk?subject=Cancelled Parcel Inquiry - <?php echo urlencode($tracking_number); ?>" 
-                       class="btn btn_primary">
-                        📞 Contact Support
-                    </a>
+                    <button class="btn btn_success" onclick="alert('Support: Call +94 11 123 4567')">📞 Contact Support</button>
                 <?php endif; ?>
             </div>
 
         <?php endif; ?>
-
-        <!-- Quick Tips -->
-        <div class="table_container">
-            <h3 class="p_1 mb_1">💡 Quick Tips</h3>
-            <div class="p_2">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
-                    <div>
-                        <h4 style="color: #2c3e50; margin-bottom: 0.5rem;">📱 Real-time Tracking</h4>
-                        <p style="margin: 0; color: #666;">Get instant updates on your parcel's journey from pickup to delivery.</p>
-                    </div>
-                    <div>
-                        <h4 style="color: #2c3e50; margin-bottom: 0.5rem;">🚌 Reliable Network</h4>
-                        <p style="margin: 0; color: #666;">Leveraging Sri Lanka's extensive bus network for efficient delivery.</p>
-                    </div>
-                    <div>
-                        <h4 style="color: #2c3e50; margin-bottom: 0.5rem;">📞 24/7 Support</h4>
-                        <p style="margin: 0; color: #666;">Our customer support team is here to help with any questions.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
     </main>
 
     <!-- Footer -->

@@ -192,6 +192,7 @@ function getCancellationStatusDisplay($status) {
                         <li><a href="passenger/dashboard.php">My Dashboard</a></li>
                     <?php endif; ?>
                     <li><a href="search_buses.php">Search Buses</a></li>
+                    <li><a href="send_parcel.php">Parcel</a></li>
                     <li><a href="my_bookings.php">My Bookings</a></li>
                     <li><a href="my_parcels.php">My Parcels</a></li>
                     <li><a href="logout.php">Logout</a></li>
@@ -445,44 +446,11 @@ function getCancellationStatusDisplay($status) {
         <!-- Quick Actions -->
         <div class="features_grid mt_2">
             <div class="feature_card">
-                <h4>📦 Send New Parcel</h4>
-                <p>Send parcels along with our bus routes for affordable, reliable delivery across Sri Lanka.</p>
-                <a href="send_parcel.php" class="btn btn_primary">Send Parcel</a>
-            </div>
-            <div class="feature_card">
                 <h4>📱 Track Parcel</h4>
                 <p>Track any parcel using the tracking number and get real-time delivery updates.</p>
                 <button class="btn btn_success" onclick="showTrackingModal()">Track Parcel</button>
             </div>
-            <div class="feature_card">
-                <h4>📞 Need Help?</h4>
-                <p>Contact our support team for assistance with your parcel deliveries or refunds.</p>
-                <button class="btn btn_success" onclick="alert('Support: +94 11 123 4567 | Email: parcels@roadrunner.lk')">Get Support</button>
-            </div>
-        </div>
-
-        <!-- Parcel Service Information -->
-        <div class="alert alert_info mt_2">
-            <h4>📦 About Road Runner Parcel Service</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                <div>
-                    <strong>🚌 Bus Route Delivery:</strong><br>
-                    Your parcels travel safely along with our passenger buses, ensuring reliable delivery.
-                </div>
-                <div>
-                    <strong>💰 Affordable Rates:</strong><br>
-                    Transparent pricing: Base rate + weight charge + distance charge. No hidden fees.
-                </div>
-                <div>
-                    <strong>📱 Real-time Tracking:</strong><br>
-                    Track your parcel journey with SMS updates and online tracking system.
-                </div>
-                <div>
-                    <strong>🛡️ Insurance & Support:</strong><br>
-                    Up to LKR 10,000 coverage included. Contact support for cancellations or assistance.
-                </div>
-            </div>
-        </div>
+        </div>    
     </main>
 
     <!-- Footer -->
