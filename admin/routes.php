@@ -120,7 +120,9 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
     <header class="header">
         <div class="container">
             <nav class="nav">
-                <div class="logo">🚌 Road Runner - Admin</div>
+                <div class="logo">
+                    <img src="../images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
+                </div>
                 <ul class="nav_links">
                     <li><a href="dashboard.php">Dashboard</a></li>
                     <li><a href="../index.php">Main Site</a></li>

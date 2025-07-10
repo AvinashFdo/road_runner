@@ -144,7 +144,9 @@ if ($search_performed && !empty($search_results)) {
     <header class="header">
         <div class="container">
             <nav class="nav">
-                <div class="logo">🚌 Road Runner</div>
+                <div class="logo">
+     <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
+</div>
                 <ul class="nav_links">
                     <li><a href="index.php">Home</a></li>
                     <?php if ($_SESSION['user_type'] === 'passenger'): ?>
@@ -161,66 +163,65 @@ if ($search_performed && !empty($search_results)) {
     </header>
 
     <!-- Main Content -->
-    <main class="container">
-        <!-- Search Form -->
-        <div class="form_container mb_2">
-            <h2 class="text_center mb_2">Search Buses</h2>
+    <main class="search-buses-container">
+        <div class="container">
+            <!-- Search Form -->
+            <div class="form_container">
+                <h2>Search Buses</h2>
 
-            <?php if ($error): ?>
-                <div class="alert alert_error">
-                    <?php echo htmlspecialchars($error); ?>
-                </div>
-            <?php endif; ?>
-
-            <form method="POST" action="search_buses.php">
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; align-items: end;">
-                    <div class="form_group">
-                        <label for="origin">From:</label>
-                        <input type="text" id="origin" name="origin" class="form_control"
-                            value="<?php echo htmlspecialchars($origin); ?>" placeholder="e.g., Colombo" required>
+                <?php if ($error): ?>
+                    <div class="alert alert_error">
+                        <?php echo htmlspecialchars($error); ?>
                     </div>
+                <?php endif; ?>
 
-                    <div class="form_group">
-                        <label for="destination">To:</label>
-                        <input type="text" id="destination" name="destination" class="form_control"
-                            value="<?php echo htmlspecialchars($destination); ?>" placeholder="e.g., Kandy" required>
-                    </div>
+                <form method="POST" action="search_buses.php">
+                    <div class="search_form_grid">
+                        <div class="form_group">
+                            <label for="origin">From:</label>
+                            <input type="text" id="origin" name="origin" class="form_control"
+                                value="<?php echo htmlspecialchars($origin); ?>" placeholder="e.g., Colombo" required>
+                        </div>
 
-                    <div class="form_group">
-                        <label for="travel_date">Travel Date:</label>
-                        <input type="date" id="travel_date" name="travel_date" class="form_control"
-                            value="<?php echo htmlspecialchars($travel_date); ?>" min="<?php echo date('Y-m-d'); ?>"
-                            required>
-                    </div>
+                        <div class="form_group">
+                            <label for="destination">To:</label>
+                            <input type="text" id="destination" name="destination" class="form_control"
+                                value="<?php echo htmlspecialchars($destination); ?>" placeholder="e.g., Kandy" required>
+                        </div>
 
-                    <button type="submit" name="search_buses" class="btn btn_primary" style="height: 44px;">
-                        🔍 Search
-                    </button>
-                </div>
-            </form>
-        </div>
+                        <div class="form_group">
+                            <label for="travel_date">Travel Date:</label>
+                            <input type="date" id="travel_date" name="travel_date" class="form_control"
+                                value="<?php echo htmlspecialchars($travel_date); ?>" min="<?php echo date('Y-m-d'); ?>"
+                                required>
+                        </div>
 
-        <!-- Popular Routes -->
-        <?php if (!$search_performed && !empty($popular_routes)): ?>
-            <div class="mb_2">
-                <h3 class="mb_1">Popular Routes</h3>
-                <div class="features_grid">
-                    <?php foreach ($popular_routes as $route): ?>
-                        <div class="feature_card" style="padding: 1rem;">
-                            <h4 style="margin-bottom: 0.5rem;"><?php echo htmlspecialchars($route['route_name']); ?></h4>
-                            <p style="color: #666; margin-bottom: 1rem;">
-                                <?php echo htmlspecialchars($route['origin']); ?> →
-                                <?php echo htmlspecialchars($route['destination']); ?>
-                            </p>
-                            <button class="btn btn_primary" style="font-size: 0.9rem; padding: 0.5rem 1rem;"
-                                onclick="fillRoute('<?php echo htmlspecialchars($route['origin']); ?>', '<?php echo htmlspecialchars($route['destination']); ?>')">
-                                Select Route
+                        <div class="form_group">
+                            <label>&nbsp;</label> <!-- Empty label for alignment -->
+                            <button type="submit" name="search_buses" class="btn btn_primary search_btn">
+                                🔍 Search
                             </button>
                         </div>
-                    <?php endforeach; ?>
-                </div>
+                    </div>
+                </form>
             </div>
-        <?php endif; ?>
+
+            <!-- Popular Routes -->
+            <?php if (!$search_performed && !empty($popular_routes)): ?>
+                <div class="popular_routes">
+                    <h3>Popular Routes</h3>
+                    <div class="features_grid">
+                        <?php foreach ($popular_routes as $route): ?>
+                            <div class="feature_card">
+                                <h4><?php echo htmlspecialchars($route['route_name']); ?></h4>
+                                <p><?php echo htmlspecialchars($route['origin']) . ' → ' . htmlspecialchars($route['destination']); ?></p>
+                                <button onclick="fillRoute('<?php echo addslashes($route['origin']); ?>', '<?php echo addslashes($route['destination']); ?>')" 
+                                   class="btn">Select Route</button>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
 
         <!-- Search Results -->
         <?php if ($search_performed): ?>
@@ -339,7 +340,7 @@ if ($search_performed && !empty($search_results)) {
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2025 Road Runner. Find your perfect journey!</p>
+            <p>&copy; 2024 Road Runner. All rights reserved.</p>
         </div>
     </footer>
 
@@ -349,6 +350,9 @@ if ($search_performed && !empty($search_results)) {
             document.getElementById('origin').value = origin;
             document.getElementById('destination').value = destination;
             document.getElementById('travel_date').focus();
+            
+            // Scroll to top to show the filled form
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // Set minimum date to today

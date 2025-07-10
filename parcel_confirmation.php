@@ -147,7 +147,9 @@ if (isset($_GET['download']) && $_GET['download'] === 'receipt') {
     <header class="header">
         <div class="container">
             <nav class="nav">
-                <div class="logo">🚌 Road Runner</div>
+                <div class="logo">
+     <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
+</div>
                 <ul class="nav_links">
                     <li><a href="index.php">Home</a></li>
                     <li><a href="send_parcel.php">Send Parcel</a></li>
