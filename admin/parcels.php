@@ -1,6 +1,4 @@
 <?php
-// Admin Parcel Management System - CORRECTED VERSION
-// Save this as: admin/parcels.php
 
 session_start();
 require_once '../db_connection.php';
@@ -265,7 +263,7 @@ try {
                 <a href="parcels.php">Parcel Management</a>
                 <a href="#" onclick="alert('Coming soon!')">Manage Users</a>
                 <a href="#" onclick="alert('Coming soon!')">View All Buses</a>
-                <a href="#" onclick="alert('Coming soon!')">System Reports</a>
+                <a href="#" onclick="alert('Coming soon!')">View All Bookings</a>
             </div>
         </div>
     </div>
@@ -495,33 +493,6 @@ try {
                     </table>
                 </div>
             <?php endif; ?>
-        </div>
-
-        <!-- Admin Guide -->
-        <div class="alert alert_info mt_2">
-            <h4>📚 Admin Guide - Parcel Management</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                <div>
-                    <strong>📊 Monitor Status:</strong><br>
-                    Track parcel progress from pending through in-transit to delivered status.
-                </div>
-                <div>
-                    <strong>🔄 Update Status:</strong><br>
-                    Use dropdown menus to change individual parcel status or bulk update multiple parcels.
-                </div>
-                <div>
-                    <strong>🗑️ Clean Up:</strong><br>
-                    Delete cancelled parcels to maintain system cleanliness (only cancelled parcels can be deleted).
-                </div>
-                <div>
-                    <strong>📊 Track Performance:</strong><br>
-                    Monitor delivery success rates, operator performance, and customer satisfaction.
-                </div>
-                <div>
-                    <strong>⚙️ System Maintenance:</strong><br>
-                    Regularly clean up cancelled parcels and maintain data integrity.
-                </div>
-            </div>
         </div>
     </main>
 

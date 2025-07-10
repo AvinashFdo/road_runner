@@ -1,6 +1,4 @@
 <?php
-// Updated Admin Dashboard with Cancelled Bookings
-// Save this as: admin/dashboard.php (UPDATED VERSION)
 
 session_start();
 require_once '../db_connection.php';
@@ -110,6 +108,7 @@ try {
                 <a href="parcels.php">Parcel Management</a>
                 <a href="#" onclick="alert('Coming soon!')">Manage Users</a>
                 <a href="#" onclick="alert('Coming soon!')">View All Buses</a>
+                <a href="#" onclick="alert('Coming soon!')">View All Bookings</a>
             </div>
         </div>
     </div>

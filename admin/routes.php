@@ -138,10 +138,10 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
             <div class="admin_nav_links">
                 <a href="dashboard.php">Dashboard</a>
                 <a href="routes.php">Manage Routes</a>
+                <a href="parcels.php">Parcel Management</a>
                 <a href="#" onclick="alert('Coming soon!')">Manage Users</a>
                 <a href="#" onclick="alert('Coming soon!')">View All Buses</a>
                 <a href="#" onclick="alert('Coming soon!')">View All Bookings</a>
-                <a href="#" onclick="alert('Coming soon!')">Reports</a>
             </div>
         </div>
     </div>
