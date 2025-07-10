@@ -168,11 +168,10 @@ try {
         <div class="container">
             <div class="operator_nav_links">
                 <a href="dashboard.php">Dashboard</a>
-                <a href="buses.php">My Buses</a>
-                <a href="schedules.php">Routes & Schedules</a>
+                <a href="buses.php">Buses</a>
+                <a href="schedules.php">Schedules</a>
                 <a href="parcels.php">Parcel Management</a>
-                <a href="#" onclick="alert('Coming soon!')">Revenue Reports</a>
-                <a href="#" onclick="alert('Coming soon!')">Profile Settings</a>
+                <a href="#" onclick="alert('Coming soon!')">View All Bookings</a>
             </div>
         </div>
     </div>
@@ -323,73 +322,13 @@ try {
         </div>
 
         <!-- Quick Actions -->
-        <h3 class="mb_1">🚀 Quick Actions</h3>
         <div class="features_grid mb_2">
-            <div class="feature_card">
-                <h4>🚌 Manage Buses</h4>
-                <p>Add new buses, update existing ones, and manage your fleet configuration.</p>
-                <a href="buses.php" class="btn btn_primary">Manage Buses</a>
-            </div>
-            
-            <div class="feature_card">
-                <h4>📅 Schedules & Routes</h4>
-                <p>Set up travel schedules, define routes, and manage departure times.</p>
-                <a href="schedules.php" class="btn btn_primary">Manage Schedules</a>
-            </div>
-            
-            <div class="feature_card">
-                <h4>📦 Parcel Management</h4>
-                <p>Track parcels on your routes and update delivery status for additional revenue.</p>
-                <a href="parcels.php" class="btn btn_primary">Manage Parcels</a>
-            </div>
-            
-            <div class="feature_card">
-                <h4>💰 Revenue Reports</h4>
-                <p>Track your earnings, view payment history, and generate financial reports.</p>
-                <button class="btn btn_primary" onclick="alert('Coming soon!')">View Reports</button>
-            </div>
-            
-            <div class="feature_card">
-                <h4>⚙️ Settings</h4>
-                <p>Update your profile information, manage payment details, and configure preferences.</p>
-                <button class="btn btn_primary" onclick="alert('Coming soon!')">Settings</button>
-            </div>
-            
             <div class="feature_card">
                 <h4>📞 Support</h4>
                 <p>Get help with your account, report issues, or contact our support team.</p>
                 <button class="btn btn_success" onclick="alert('Support: Call +94 11 123 4567')">Get Support</button>
             </div>
         </div>
-
-        <!-- Getting Started Guide -->
-        <?php if ($total_buses === 0): ?>
-        <div class="alert alert_info mt_2">
-            <h4>🚀 Getting Started as a Bus Operator</h4>
-            <p><strong>Welcome to Road Runner!</strong> Here's how to get started:</p>
-            <ol style="margin: 1rem 0; padding-left: 2rem;">
-                <li><strong>Add Your Buses:</strong> Register your buses with seating configuration</li>
-                <li><strong>Create Routes:</strong> Set up your travel routes with pickup/drop points</li>
-                <li><strong>Set Schedules:</strong> Define departure times and pricing</li>
-                <li><strong>Go Live:</strong> Start accepting bookings from passengers</li>
-            </ol>
-            <p><em>Need help? Contact our support team for assistance with setting up your account.</em></p>
-        </div>
-        <?php else: ?>
-        <div class="alert alert_success mt_2">
-            <h4>🎉 Your Bus Operation is Active!</h4>
-            <p>Great job! You have <strong><?php echo $total_buses; ?> bus(es)</strong> and <strong><?php echo $active_routes; ?> active schedule(s)</strong>. Keep monitoring your dashboard for new bookings and activity updates.</p>
-            <div style="margin-top: 1rem;">
-                <strong>💡 Performance Insights:</strong>
-                <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-                    <li><strong>Total Revenue:</strong> LKR <?php echo number_format($total_revenue); ?> (Bookings: <?php echo number_format($total_booking_revenue); ?> + Parcels: <?php echo number_format($total_parcel_revenue); ?>)</li>
-                    <li><strong>Today's Activity:</strong> <?php echo $today_bookings; ?> new booking<?php echo $today_bookings !== 1 ? 's' : ''; ?></li>
-                    <li>Monitor recent activities to stay updated on bookings and system changes</li>
-                    <li>Update schedules and pricing based on demand patterns</li>
-                </ul>
-            </div>
-        </div>
-        <?php endif; ?>
     </main>
 
     <!-- Footer -->

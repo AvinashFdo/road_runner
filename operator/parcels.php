@@ -217,11 +217,10 @@ try {
         <div class="container">
             <div class="operator_nav_links">
                 <a href="dashboard.php">Dashboard</a>
-                <a href="buses.php">My Buses</a>
-                <a href="schedules.php">Routes & Schedules</a>
+                <a href="buses.php">Buses</a>
+                <a href="schedules.php">Schedules</a>
                 <a href="parcels.php">Parcel Management</a>
-                <a href="#" onclick="alert('Coming soon!')">Revenue Reports</a>
-                <a href="#" onclick="alert('Coming soon!')">Settings</a>
+                <a href="#" onclick="alert('Coming soon!')">View All Bookings</a>
             </div>
         </div>
     </div>
@@ -413,29 +412,6 @@ try {
                     </table>
                 </div>
             <?php endif; ?>
-        </div>
-
-        <!-- Operator Guide -->
-        <div class="alert alert_info mt_2">
-            <h4>📚 Operator Guide - Parcel Management</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                <div>
-                    <strong>📦 Your Responsibility:</strong><br>
-                    Manage parcels on routes where your buses operate. Update status as parcels move through the delivery process.
-                </div>
-                <div>
-                    <strong>🚌 Status Updates:</strong><br>
-                    Update parcels to "In Transit" when loaded, and "Delivered" when successfully handed over at destination.
-                </div>
-                <div>
-                    <strong>📞 Communication:</strong><br>
-                    Contact senders/receivers if there are any delivery issues or delays on your routes.
-                </div>
-                <div>
-                    <strong>💰 Revenue Tracking:</strong><br>
-                    Parcel deliveries generate additional revenue for your bus operations.
-                </div>
-            </div>
         </div>
     </main>
 

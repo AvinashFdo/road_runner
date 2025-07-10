@@ -199,18 +199,17 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
         <div class="container">
             <div class="operator_nav_links">
                 <a href="dashboard.php">Dashboard</a>
-                <a href="buses.php">My Buses</a>
-                <a href="schedules.php">Routes & Schedules</a>
-                <a href="#" onclick="alert('Coming soon!')">Bookings</a>
-                <a href="#" onclick="alert('Coming soon!')">Revenue Reports</a>
-                <a href="#" onclick="alert('Coming soon!')">Profile Settings</a>
+                <a href="buses.php">Buses</a>
+                <a href="schedules.php">Schedules</a>
+                <a href="parcels.php">Parcel Management</a>
+                <a href="#" onclick="alert('Coming soon!')">View All Bookings</a>
             </div>
         </div>
     </div>
 
     <!-- Main Content -->
     <main class="container">
-        <h2 class="mb_2">Route & Schedule Management</h2>
+        <h2 class="mb_2">Schedule Management</h2>
 
         <!-- Check if operator has buses -->
         <?php if (empty($operator_buses)): ?>
@@ -429,29 +428,6 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                     </tbody>
                 </table>
             <?php endif; ?>
-        </div>
-
-        <!-- Help Section -->
-        <div class="alert alert_info mt_2">
-            <h4>💡 Schedule Management Tips</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                <div>
-                    <strong>Pricing Strategy:</strong><br>
-                    Set competitive base prices. Consider bus type, route popularity, and distance.
-                </div>
-                <div>
-                    <strong>Time Management:</strong><br>
-                    Leave buffer time between arrival and next departure for cleaning and boarding.
-                </div>
-                <div>
-                    <strong>Availability:</strong><br>
-                    Use 'Weekdays' for business routes, 'Weekends' for leisure destinations.
-                </div>
-                <div>
-                    <strong>Status Control:</strong><br>
-                    Set to 'Inactive' during maintenance or seasonal adjustments.
-                </div>
-            </div>
         </div>
     </main>
 

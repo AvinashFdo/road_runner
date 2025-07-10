@@ -182,10 +182,10 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
         <div class="container">
             <div class="operator_nav_links">
                 <a href="dashboard.php">Dashboard</a>
-                <a href="buses.php">My Buses</a>
-                <a href="schedules.php">Routes & Schedules</a>
-                <a href="#" onclick="alert('Coming soon!')">Bookings</a>
-                <a href="#" onclick="alert('Coming soon!')">Revenue Reports</a>
+                <a href="buses.php">Buses</a>
+                <a href="schedules.php">Schedules</a>
+                <a href="parcels.php">Parcel Management</a>
+                <a href="#" onclick="alert('Coming soon!')">View All Bookings</a>
             </div>
         </div>
     </div>
