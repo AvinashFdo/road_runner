@@ -5,7 +5,7 @@
     --primary-red: #e74c3c;
     --primary-green: #27ae60;
     --primary-orange: #f39c12;
-    
+
     /* Neutral Colors */
     --dark-blue: #2c3e50;
     --dark-blue-light: #34495e;
@@ -14,13 +14,13 @@
     --border-gray: #dee2e6;
     --text-gray: #495057;
     --white: #ffffff;
-    
+
     /* Basic Spacing */
     --spacing-sm: 0.5rem;
     --spacing-md: 1rem;
     --spacing-lg: 1.5rem;
     --spacing-xl: 2rem;
-    
+
     /* Basic Shadows & Radius */
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
     --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -28,6 +28,7 @@
     --radius-md: 8px;
     --radius-lg: 12px;
 }
+
 * {
     margin: 0;
     padding: 0;
@@ -38,7 +39,14 @@ body {
     font-family: Arial, sans-serif;
     line-height: 1.6;
     color: #333;
+    margin: 0;
+    min-height: 100vh;
+    position: relative;
+    padding-bottom: 80px;
 }
+
+
+
 
 .header {
     background: #2c3e50;
@@ -177,7 +185,7 @@ body {
     background: white;
     padding: 2rem;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     text-align: center;
 }
 
@@ -187,6 +195,10 @@ body {
 }
 
 .footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
     background: #2c3e50;
     color: white;
     text-align: center;
@@ -207,7 +219,7 @@ body {
     padding: 2rem;
     background: white;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .form_group {
@@ -282,7 +294,7 @@ body {
     background: white;
     padding: 1.5rem;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     text-align: center;
 }
 
@@ -298,19 +310,22 @@ body {
     font-size: 0.9rem;
 }
 
-.admin_nav, .operator_nav {
+.admin_nav,
+.operator_nav {
     background: #34495e;
     padding: 1rem 0;
     margin-bottom: 2rem;
 }
 
-.admin_nav_links, .operator_nav_links {
+.admin_nav_links,
+.operator_nav_links {
     display: flex;
     gap: 2rem;
     flex-wrap: wrap;
 }
 
-.admin_nav_links a, .operator_nav_links a {
+.admin_nav_links a,
+.operator_nav_links a {
     color: white;
     text-decoration: none;
     padding: 0.5rem 1rem;
@@ -318,7 +333,8 @@ body {
     transition: background 0.3s;
 }
 
-.admin_nav_links a:hover, .operator_nav_links a:hover {
+.admin_nav_links a:hover,
+.operator_nav_links a:hover {
     background: #2c3e50;
 }
 
@@ -326,7 +342,7 @@ body {
     background: white;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .table {
@@ -421,7 +437,7 @@ body {
     background: white;
     border-radius: 12px;
     padding: 2rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     max-width: 600px;
 }
 
@@ -552,7 +568,7 @@ body {
     background: white;
     border-radius: 12px;
     padding: 1.5rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     height: fit-content;
     position: sticky;
     top: 1rem;
@@ -684,7 +700,7 @@ body {
     border-radius: 12px;
     padding: 2rem;
     margin-bottom: 2rem;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     border: 1px solid #eee;
 }
 
@@ -758,75 +774,125 @@ body {
 
 /* operator dashboard styles */
 .activity_item {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            padding: 1rem;
-            border-bottom: 1px solid #eee;
-            transition: background-color 0.2s ease;
-        }
-        
-        .activity_item:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .activity_item:last-child {
-            border-bottom: none;
-        }
-        
-        .activity_icon {
-            font-size: 1.5rem;
-            min-width: 40px;
-            text-align: center;
-        }
-        
-        .activity_content {
-            flex: 1;
-        }
-        
-        .activity_type {
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 0.25rem;
-        }
-        
-        .activity_details {
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 0.25rem;
-        }
-        
-        .activity_time {
-            color: #999;
-            font-size: 0.8rem;
-        }
-        
-        .no_activities {
-            text-align: center;
-            padding: 2rem;
-            color: #666;
-        }
-        
-        .dashboard_metric {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .dashboard_metric:last-child {
-            border-bottom: none;
-        }
-        
-        .metric_label {
-            color: #666;
-        }
-        
-        .metric_value {
-            font-weight: bold;
-            color: #2c3e50;
-        }
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s ease;
+}
+
+.activity_item:hover {
+    background-color: #f8f9fa;
+}
+
+.activity_item:last-child {
+    border-bottom: none;
+}
+
+.activity_icon {
+    font-size: 1.5rem;
+    min-width: 40px;
+    text-align: center;
+}
+
+.activity_content {
+    flex: 1;
+}
+
+.activity_type {
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 0.25rem;
+}
+
+.activity_details {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.activity_time {
+    color: #999;
+    font-size: 0.8rem;
+}
+
+.no_activities {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+}
+
+.dashboard_metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.dashboard_metric:last-child {
+    border-bottom: none;
+}
+
+.metric_label {
+    color: #666;
+}
+
+.metric_value {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+/* Status Badge Styles - Add these to your style.css */
+
+/* Booking Status Badges */
+.badge_pending {
+    background: #ffc107;
+    color: #212529;
+}
+
+.badge_confirmed {
+    background: #28a745;
+    color: white;
+}
+
+.badge_completed {
+    background: #17a2b8;
+    color: white;
+}
+
+.badge_cancelled {
+    background: #dc3545;
+    color: white;
+}
+
+/* Parcel Status Badges */
+.badge_in_transit {
+    background: #fd7e14;
+    color: white;
+}
+
+.badge_delivered {
+    background: #20c997;
+    color: white;
+}
+
+/* Payment Status Badges */
+.badge_paid {
+    background: #28a745;
+    color: white;
+}
+
+.badge_unpaid {
+    background: #dc3545;
+    color: white;
+}
+
+.badge_refunded {
+    background: #6f42c1;
+    color: white;
+}
 
 /* Responsive Design */
 @media (max-width: 768px) {
@@ -834,54 +900,54 @@ body {
         flex-direction: column;
         gap: 1rem;
     }
-    
+
     .nav_links {
         gap: 1rem;
     }
-    
+
     .hero h1 {
         font-size: 2rem;
     }
-    
+
     .form_container {
         margin: 1rem;
         padding: 1rem;
     }
-    
+
     .seat_selection_container {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
-    
+
     .seat {
         width: 35px;
         height: 35px;
         font-size: 0.7rem;
     }
-    
+
     .booking_form {
         position: static;
     }
-    
+
     .trip-header {
         flex-direction: column;
         gap: 1rem;
         align-items: stretch;
     }
-    
+
     .trip-actions {
         align-items: center;
         flex-direction: row;
         justify-content: center;
         gap: 1rem;
     }
-    
+
     .passenger-meta {
         flex-direction: column;
         gap: 0.5rem;
         align-items: flex-start;
     }
-    
+
     .booking-group {
         padding: 1rem;
     }
@@ -892,9 +958,26 @@ body {
     text-align: center;
 }
 
-.mt_1 { margin-top: 1rem; }
-.mt_2 { margin-top: 2rem; }
-.mb_1 { margin-bottom: 1rem; }
-.mb_2 { margin-bottom: 2rem; }
-.p_1 { padding: 1rem; }
-.p_2 { padding: 2rem; }
+.mt_1 {
+    margin-top: 1rem;
+}
+
+.mt_2 {
+    margin-top: 2rem;
+}
+
+.mb_1 {
+    margin-bottom: 1rem;
+}
+
+.mb_2 {
+    margin-bottom: 2rem;
+}
+
+.p_1 {
+    padding: 1rem;
+}
+
+.p_2 {
+    padding: 2rem;
+}
