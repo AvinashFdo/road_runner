@@ -470,7 +470,7 @@ try {
             </div>
         </div>
 
-        <!-- Payment Options Info -->
+        <!-- Payment Options Info 
         <div class="alert alert_info" style="margin: 2rem 0;">
             <h4>💳 Payment Options Available</h4>
             <p>After filling the parcel details, you can choose to:</p>
@@ -478,7 +478,7 @@ try {
                 <li><strong>Pay Now:</strong> Complete payment online with your card for instant confirmation</li>
                 <li><strong>Pay at Pickup:</strong> Book now and pay when you drop off the parcel at the station</li>
             </ul>
-        </div>
+        </div> -->
     </main>
 
     <!-- Footer -->

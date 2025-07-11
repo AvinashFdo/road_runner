@@ -160,13 +160,13 @@ if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
                     <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
                 </div>
                 <ul class="nav_links">
-                    <li><a href="../index.php">Home</a></li>
+                    <li><a href="index.php">Home</a></li>
                     <li><a href="dashboard.php">My Dashboard</a></li>
-                    <li><a href="../search_buses.php">Search Buses</a></li>
+                    <li><a href="search_buses.php">Search Buses</a></li>
                     <li><a href="send_parcel.php">Parcel</a></li>
-                    <li><a href="../my_bookings.php">My Bookings</a></li>
-                    <li><a href="../my_parcels.php">My Parcels</a></li>
-                    <li><a href="../logout.php">Logout</a></li>
+                    <li><a href="my_bookings.php">My Bookings</a></li>
+                    <li><a href="my_parcels.php">My Parcels</a></li>
+                    <li><a href="logout.php">Logout</a></li>
                 </ul>
             </nav>
         </div>

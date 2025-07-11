@@ -303,15 +303,6 @@ $total_rows = ceil(count($seats) / $seats_per_row);
                             <span>Selected</span>
                         </div>
                     </div>
-
-                    <div class="alert alert_info" style="margin: 2rem 0;">
-                        <h4>💳 Payment Options Available</h4>
-                        <p>After selecting your seats, you can choose to:</p>
-                        <ul style="margin: 0.5rem 0; padding-left: 2rem;">
-                            <li><strong>Pay Now:</strong> Complete payment online with your card for instant confirmation</li>
-                            <li><strong>Pay Later:</strong> Reserve seats and pay at the bus station (seats held for 2 hours)</li>
-                        </ul>
-                    </div>
                 </div>
             </div>
             

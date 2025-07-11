@@ -369,12 +369,8 @@ function getCancellationStatusDisplay($status)
                                     class="btn btn_primary" style="font-size: 0.9rem;">
                                     📱 View Details
                                 </a>
-                                <div style="margin-top: 0.5rem;">
-                                    <button class="btn btn_success" onclick="alert('Feedback feature coming soon!')"
-                                        style="font-size: 0.9rem;">
-                                        ⭐ Rate Service
-                                    </button>
-                                </div>
+
+
                             </div>
                         </div>
 
