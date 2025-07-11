@@ -95,7 +95,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </header>
 
     <!-- Main Content -->
-    <main class="container" style="padding: 2rem 0;">
+    <main>
+    <div class="login-page-wrapper">
         <div class="form_container">
             <h2 class="text_center mb_2">Login to Your Account</h2>
 
@@ -123,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="password" id="password" name="password" class="form_control" required>
                 </div>
 
-                <button type="submit" class="btn btn_primary" style="width: 100%;">
+                <button type="submit" class="btn btn_primary">
                     Login
                 </button>
             </form>
@@ -132,7 +133,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p>Don't have an account? <a href="register.php">Register here</a></p>
             </div>
         </div>
-    </main>
+    </div>
+</main>
 
     <!-- Footer -->
     <footer class="footer">
