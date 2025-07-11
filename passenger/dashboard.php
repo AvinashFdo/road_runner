@@ -203,6 +203,7 @@ function getHorizontalSeatNumber($seatNumber, $busId, $pdo)
 
     <!-- Main Content -->
     <main class="container">
+        <br>
         <!-- Welcome Message -->
         <div class="user_info mb_2">
             Welcome back, <?php echo htmlspecialchars($_SESSION['user_name']); ?>! Ready for your next journey?

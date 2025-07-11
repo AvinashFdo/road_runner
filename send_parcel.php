@@ -52,29 +52,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_parcel'])) {
             if (!$route_info) {
                 $error = "Selected route is not available.";
             } else {
-                // Calculate delivery cost: Base rate + weight rate + distance rate
-                $base_rate = 500; // LKR 500 base rate
-                $weight_rate = $weight_kg * 50; // LKR 50 per kg
-                $distance_rate = $route_info['distance_km'] * 2; // LKR 2 per km
-                $delivery_cost = $base_rate + $weight_rate + $distance_rate;
+                // Calculate delivery cost
+                $base_cost = 500; // Base cost in LKR
+                $per_kg_cost = 50; // Cost per kg
+                $per_km_cost = 2; // Cost per km
+                $distance = $route_info['distance_km'];
+                $weight = floatval($weight_kg);
+
+                $delivery_cost = $base_cost + ($per_kg_cost * $weight) + ($per_km_cost * $distance);
 
                 // Store parcel data in session for payment processing
                 $_SESSION['pending_parcel'] = [
                     'route_id' => $route_id,
+                    'route_name' => $route_info['route_name'],
+                    'origin' => $route_info['origin'],
+                    'destination' => $route_info['destination'],
+                    'distance_km' => $distance,
                     'sender_name' => $sender_name,
                     'sender_phone' => $sender_phone,
                     'receiver_name' => $receiver_name,
                     'receiver_phone' => $receiver_phone,
                     'receiver_address' => $receiver_address,
                     'travel_date' => $travel_date,
-                    'weight_kg' => $weight_kg,
+                    'weight_kg' => $weight,
                     'parcel_type' => $parcel_type,
                     'parcel_description' => $parcel_description,
-                    'delivery_cost' => $delivery_cost,
-                    'route_name' => $route_info['route_name'],
-                    'origin' => $route_info['origin'],
-                    'destination' => $route_info['destination'],
-                    'distance_km' => $route_info['distance_km']
+                    'delivery_cost' => $delivery_cost
                 ];
 
                 // Redirect to payment page
@@ -83,23 +86,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_parcel'])) {
             }
         } catch (PDOException $e) {
             $error = "Error processing parcel booking: " . $e->getMessage();
-        } catch (Exception $e) {
-            $error = $e->getMessage();
         }
     }
 }
 
-// Get active routes for dropdown
+// Get available routes
 try {
-    $stmt = $pdo->query("
-        SELECT route_id, route_name, origin, destination, distance_km 
-        FROM routes 
-        WHERE status = 'active' 
-        ORDER BY route_name ASC
-    ");
+    $stmt = $pdo->prepare("SELECT route_id, route_name, origin, destination, distance_km FROM routes WHERE status = 'active' ORDER BY route_name");
+    $stmt->execute();
     $routes = $stmt->fetchAll();
 } catch (PDOException $e) {
-    $routes = [];
     $error = "Error loading routes: " . $e->getMessage();
 }
 
@@ -121,6 +117,149 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Send Parcel - Road Runner</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        /* Two-column parcel form styles */
+        .parcel-form-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin: 2rem auto;
+            max-width: 1200px;
+        }
+
+        .form-header {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .form-header h2 {
+            margin: 0;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-content {
+            padding: 2rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #3498db;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .cost-display {
+            background: #e8f5e8;
+            border: 2px solid #27ae60;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            margin: 1.5rem 0;
+        }
+
+        .cost-amount {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #27ae60;
+            margin: 0.5rem 0;
+        }
+
+        .submit-section {
+            grid-column: 1 / -1;
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid #eee;
+        }
+
+        .btn-submit {
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 250px;
+        }
+
+        .btn-submit:hover {
+            background: #219a52;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+        }
+
+        .btn-submit:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .subsection-title {
+            color: #2c3e50;
+            margin: 1.5rem 0 1rem 0;
+            font-size: 1rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .form-content {
+                padding: 1rem;
+            }
+
+            .form-section {
+                padding: 1rem;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -129,8 +268,8 @@ try {
         <div class="container">
             <nav class="nav">
                 <div class="logo">
-     <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
-</div>
+                    <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
+                </div>
                 <ul class="nav_links">
                     <li><a href="index.php">Home</a></li>
                     <?php if ($_SESSION['user_type'] === 'passenger'): ?>
@@ -148,8 +287,6 @@ try {
 
     <!-- Main Content -->
     <main class="container">
-        <h2 class="mb_2">📦 Send Parcel</h2>
-
         <!-- Display Messages -->
         <?php if ($error): ?>
             <div class="alert alert_error">
@@ -164,6 +301,7 @@ try {
         <?php endif; ?>
 
         <!-- Parcel Service Info -->
+
         <div class="alert alert_info mb_2">
             <h4>📦 Road Runner Parcel Delivery Service</h4>
             <div
@@ -182,244 +320,241 @@ try {
                 </div>
                 <div>
                     <strong>⚖️ Weight Limit:</strong><br>
-                    Maximum weight: 50kg per parcel. For larger items, contact support.
+                    Maximum weight: 50kg per parcel.
                 </div>
             </div>
         </div>
 
-        <!-- Parcel Booking Form -->
-        <div class="form_container">
-            <form method="POST" action="send_parcel.php" id="parcel_form">
-                <!-- Route Selection -->
-                <div class="form_group">
-                    <label for="route_id">Select Route: *</label>
-                    <select id="route_id" name="route_id" class="form_control" required onchange="calculateCost()">
-                        <option value="">Choose delivery route...</option>
-                        <?php foreach ($routes as $route): ?>
-                            <option value="<?php echo $route['route_id']; ?>"
-                                data-distance="<?php echo $route['distance_km']; ?>"
-                                data-route-name="<?php echo htmlspecialchars($route['route_name']); ?>">
-                                <?php echo htmlspecialchars($route['route_name']); ?>
-                                (<?php echo htmlspecialchars($route['origin']); ?> →
-                                <?php echo htmlspecialchars($route['destination']); ?>)
-                                - <?php echo $route['distance_km']; ?> km
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <!-- Travel Date -->
-                <div class="form_group">
-                    <label for="travel_date">Delivery Date: *</label>
-                    <input type="date" id="travel_date" name="travel_date" class="form_control"
-                        min="<?php echo date('Y-m-d'); ?>" required>
-                </div>
-
-                <!-- Sender Information -->
-                <fieldset style="border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin: 1rem 0;">
-                    <legend style="padding: 0 0.5rem; font-weight: bold; color: #2c3e50;">Sender Information</legend>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div class="form_group">
-                            <label for="sender_name">Sender Name: *</label>
-                            <input type="text" id="sender_name" name="sender_name" class="form_control"
-                                value="<?php echo $user_info ? htmlspecialchars($user_info['full_name']) : ''; ?>"
-                                required>
-                        </div>
-
-                        <div class="form_group">
-                            <label for="sender_phone">Sender Phone: *</label>
-                            <input type="tel" id="sender_phone" name="sender_phone" class="form_control"
-                                value="<?php echo $user_info ? htmlspecialchars($user_info['phone']) : ''; ?>"
-                                placeholder="0771234567" pattern="[0-9]{10}" required>
-                        </div>
-                    </div>
-                </fieldset>
-
-                <!-- Receiver Information -->
-                <fieldset style="border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin: 1rem 0;">
-                    <legend style="padding: 0 0.5rem; font-weight: bold; color: #2c3e50;">Receiver Information</legend>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div class="form_group">
-                            <label for="receiver_name">Receiver Name: *</label>
-                            <input type="text" id="receiver_name" name="receiver_name" class="form_control" required>
-                        </div>
-
-                        <div class="form_group">
-                            <label for="receiver_phone">Receiver Phone: *</label>
-                            <input type="tel" id="receiver_phone" name="receiver_phone" class="form_control"
-                                placeholder="0777654321" pattern="[0-9]{10}" required>
-                        </div>
-                    </div>
-
-                    <div class="form_group">
-                        <label for="receiver_address">Receiver Address: *</label>
-                        <textarea id="receiver_address" name="receiver_address" class="form_control" rows="3"
-                            placeholder="Complete address including house number, street, city" required></textarea>
-                    </div>
-                </fieldset>
-
-                <!-- Parcel Information -->
-                <fieldset style="border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin: 1rem 0;">
-                    <legend style="padding: 0 0.5rem; font-weight: bold; color: #2c3e50;">Parcel Information</legend>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div class="form_group">
-                            <label for="weight_kg">Weight (kg): *</label>
-                            <input type="number" id="weight_kg" name="weight_kg" class="form_control" step="0.1"
-                                min="0.1" max="50" placeholder="e.g., 2.5" required onchange="calculateCost()"
-                                oninput="calculateCost()">
-                        </div>
-
-                        <div class="form_group">
-                            <label for="parcel_type">Parcel Type:</label>
-                            <select id="parcel_type" name="parcel_type" class="form_control">
-                                <option value="General">General Items</option>
-                                <option value="Documents">Documents</option>
-                                <option value="Electronics">Electronics</option>
-                                <option value="Clothing">Clothing</option>
-                                <option value="Books">Books</option>
-                                <option value="Food Items">Food Items</option>
-                                <option value="Medical">Medical Supplies</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form_group">
-                        <label for="parcel_description">Parcel Description (Optional):</label>
-                        <textarea id="parcel_description" name="parcel_description" class="form_control" rows="2"
-                            placeholder="Brief description of parcel contents (for internal tracking)"></textarea>
-                    </div>
-                </fieldset>
-
-                <!-- Cost Calculation -->
-                <div style="background: #f8f9fa; border-radius: 8px; padding: 1rem; margin: 1rem 0;">
-                    <h4 style="margin-bottom: 1rem; color: #2c3e50;">💰 Delivery Cost Calculation</h4>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span>Base Rate:</span>
-                                <span>LKR 500.00</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span>Weight Charge (<span id="weight_display">0</span> kg × LKR 50):</span>
-                                <span id="weight_cost">LKR 0.00</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span>Distance Charge (<span id="distance_display">0</span> km × LKR 2):</span>
-                                <span id="distance_cost">LKR 0.00</span>
-                            </div>
-                        </div>
-                        <div style="text-align: center; border-left: 2px solid #ddd; padding-left: 1rem;">
-                            <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">Total Delivery Cost
-                            </div>
-                            <div style="font-size: 2rem; font-weight: bold; color: #e74c3c;" id="total_cost">LKR 500.00
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="font-size: 0.9rem; color: #666; text-align: center;">
-                        💡 Cost includes pickup from bus station and delivery notification to receiver
-                    </div>
-                </div>
-
-                <!-- Submit Button -->
-                <button type="submit" name="send_parcel" class="btn btn_primary"
-                    style="width: 100%; padding: 1rem; font-size: 1.1rem;">
-                    📦 Send Parcel
-                </button>
-
-                <p style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: #666;">
-                    <a href="index.php">← Back to Home</a> |
-                    <a href="my_parcels.php">My Parcels</a>
-                </p>
-            </form>
-            <div class="alert alert_info" style="margin: 2rem 0;">
-                <h4>💳 Payment Options Available</h4>
-                <p>After filling the parcel details, you can choose to:</p>
-                <ul style="margin: 0.5rem 0; padding-left: 2rem;">
-                    <li><strong>Pay Now:</strong> Complete payment online with your card for instant confirmation</li>
-                    <li><strong>Pay at Pickup:</strong> Book now and pay when you drop off the parcel at the station
-                    </li>
-                </ul>
+        <!-- Two-Column Parcel Form -->
+        <div class="parcel-form-container">
+            <!-- Form Header -->
+            <div class="form-header">
+                <h2>📦 Send Parcel</h2>
+                <p>Fast, reliable parcel delivery across routes</p>
             </div>
+
+            <!-- Form Content -->
+            <div class="form-content">
+                <form method="POST" action="send_parcel.php" id="parcelForm">
+                    <div class="form-grid">
+                        <!-- Left Column: Route & Delivery Info -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <span>🚌</span>
+                                Route & Delivery Information
+                            </div>
+
+                            <div class="form_group">
+                                <label for="route_id">Select Route <span class="required">*</span></label>
+                                <select id="route_id" name="route_id" class="form_control" required
+                                    onchange="calculateCost()">
+                                    <option value="">Choose a route...</option>
+                                    <?php foreach ($routes as $route): ?>
+                                        <option value="<?php echo $route['route_id']; ?>"
+                                            data-distance="<?php echo $route['distance_km']; ?>">
+                                            <?php echo htmlspecialchars($route['route_name'] . ' (' . $route['distance_km'] . ' km)'); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div class="form_group">
+                                <label for="travel_date">Delivery Date <span class="required">*</span></label>
+                                <input type="date" id="travel_date" name="travel_date" class="form_control"
+                                    min="<?php echo date('Y-m-d'); ?>" required onchange="calculateCost()">
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form_group">
+                                    <label for="weight_kg">Weight (kg) <span class="required">*</span></label>
+                                    <input type="number" id="weight_kg" name="weight_kg" class="form_control" step="0.1"
+                                        min="0.1" max="50" placeholder="e.g., 2.5" required onchange="calculateCost()"
+                                        oninput="calculateCost()">
+                                </div>
+
+                                <div class="form_group">
+                                    <label for="parcel_type">Parcel Type</label>
+                                    <select id="parcel_type" name="parcel_type" class="form_control">
+                                        <option value="General">General Items</option>
+                                        <option value="Documents">Documents</option>
+                                        <option value="Electronics">Electronics</option>
+                                        <option value="Clothing">Clothing</option>
+                                        <option value="Books">Books</option>
+                                        <option value="Food Items">Food Items</option>
+                                        <option value="Medical">Medical Supplies</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form_group">
+                                <label for="parcel_description">Parcel Description (Optional)</label>
+                                <textarea id="parcel_description" name="parcel_description" class="form_control"
+                                    rows="3" placeholder="Brief description of parcel contents..."></textarea>
+                            </div>
+
+                            <!-- Cost Display -->
+                            <div class="cost-display" id="costDisplay" style="display: none;">
+                                <div style="color: #666; margin-bottom: 0.5rem;">Estimated Delivery Cost</div>
+                                <div class="cost-amount" id="costAmount">LKR 0</div>
+                                <small style="color: #666;">Based on weight and distance</small>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Sender & Receiver Info -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <span>👥</span>
+                                Sender & Receiver Information
+                            </div>
+
+                            <!-- Sender Info -->
+                            <div class="subsection-title">
+                                📤 Sender Details
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form_group">
+                                    <label for="sender_name">Sender Name <span class="required">*</span></label>
+                                    <input type="text" id="sender_name" name="sender_name" class="form_control"
+                                        value="<?php echo $user_info ? htmlspecialchars($user_info['full_name']) : ''; ?>"
+                                        required>
+                                </div>
+
+                                <div class="form_group">
+                                    <label for="sender_phone">Sender Phone <span class="required">*</span></label>
+                                    <input type="tel" id="sender_phone" name="sender_phone" class="form_control"
+                                        value="<?php echo $user_info ? htmlspecialchars($user_info['phone']) : ''; ?>"
+                                        placeholder="0771234567" pattern="[0-9]{10}" required>
+                                </div>
+                            </div>
+
+                            <!-- Receiver Info -->
+                            <div class="subsection-title">
+                                📥 Receiver Details
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form_group">
+                                    <label for="receiver_name">Receiver Name <span class="required">*</span></label>
+                                    <input type="text" id="receiver_name" name="receiver_name" class="form_control"
+                                        required>
+                                </div>
+
+                                <div class="form_group">
+                                    <label for="receiver_phone">Receiver Phone <span class="required">*</span></label>
+                                    <input type="tel" id="receiver_phone" name="receiver_phone" class="form_control"
+                                        placeholder="0777654321" pattern="[0-9]{10}" required>
+                                </div>
+                            </div>
+
+                            <div class="form_group">
+                                <label for="receiver_address">Receiver Address <span class="required">*</span></label>
+                                <textarea id="receiver_address" name="receiver_address" class="form_control" rows="4"
+                                    placeholder="Complete address including house number, street, city"
+                                    required></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Submit Section (spans both columns) -->
+                        <div class="submit-section">
+                            <button type="submit" name="send_parcel" class="btn-submit" id="submitBtn" disabled>
+                                📦 Book Parcel Delivery
+                            </button>
+                            <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
+                                By booking, you agree to our terms and conditions
+                            </p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Payment Options Info -->
+        <div class="alert alert_info" style="margin: 2rem 0;">
+            <h4>💳 Payment Options Available</h4>
+            <p>After filling the parcel details, you can choose to:</p>
+            <ul style="margin: 0.5rem 0; padding-left: 2rem;">
+                <li><strong>Pay Now:</strong> Complete payment online with your card for instant confirmation</li>
+                <li><strong>Pay at Pickup:</strong> Book now and pay when you drop off the parcel at the station</li>
+            </ul>
         </div>
     </main>
 
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2025 Road Runner. Reliable parcel delivery across Sri Lanka!</p>
+            <p>&copy; 2025 Road Runner. Safe and reliable parcel delivery!</p>
         </div>
     </footer>
 
     <script>
-        // Set default delivery date to tomorrow
-        document.addEventListener('DOMContentLoaded', function () {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            document.getElementById('travel_date').value = tomorrow.toISOString().split('T')[0];
-        });
-
-        // Calculate delivery cost in real-time
+        // Calculate delivery cost based on weight and route
         function calculateCost() {
             const routeSelect = document.getElementById('route_id');
             const weightInput = document.getElementById('weight_kg');
+            const dateInput = document.getElementById('travel_date');
+            const costDisplay = document.getElementById('costDisplay');
+            const costAmount = document.getElementById('costAmount');
+            const submitBtn = document.getElementById('submitBtn');
 
-            const baseRate = 500;
-            const weightRate = 50; // per kg
-            const distanceRate = 2; // per km
-
-            let weight = parseFloat(weightInput.value) || 0;
-            let distance = 0;
-
-            if (routeSelect.selectedIndex > 0) {
+            if (routeSelect.value && weightInput.value && dateInput.value) {
                 const selectedOption = routeSelect.options[routeSelect.selectedIndex];
-                distance = parseFloat(selectedOption.dataset.distance) || 0;
+                const distance = parseFloat(selectedOption.getAttribute('data-distance')) || 0;
+                const weight = parseFloat(weightInput.value);
+
+                // Cost calculation: Base 500 + 50/kg + 2/km
+                const baseCost = 500;
+                const perKgCost = 50;
+                const perKmCost = 2;
+
+                const totalCost = Math.round(baseCost + (perKgCost * weight) + (perKmCost * distance));
+
+                costAmount.textContent = `LKR ${totalCost}`;
+                costDisplay.style.display = 'block';
+                submitBtn.disabled = false;
+            } else {
+                costDisplay.style.display = 'none';
+                submitBtn.disabled = true;
             }
-
-            const weightCost = weight * weightRate;
-            const distanceCost = distance * distanceRate;
-            const totalCost = baseRate + weightCost + distanceCost;
-
-            // Update display
-            document.getElementById('weight_display').textContent = weight.toFixed(1);
-            document.getElementById('distance_display').textContent = distance.toFixed(1);
-            document.getElementById('weight_cost').textContent = 'LKR ' + weightCost.toFixed(2);
-            document.getElementById('distance_cost').textContent = 'LKR ' + distanceCost.toFixed(2);
-            document.getElementById('total_cost').textContent = 'LKR ' + totalCost.toFixed(2);
         }
 
+        // Phone number validation
+        document.getElementById('sender_phone').addEventListener('input', function (e) {
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        });
+
+        document.getElementById('receiver_phone').addEventListener('input', function (e) {
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        });
+
         // Form validation
-        document.getElementById('parcel_form').addEventListener('submit', function (e) {
-            const weight = parseFloat(document.getElementById('weight_kg').value);
+        document.getElementById('parcelForm').addEventListener('submit', function (e) {
+            const requiredFields = document.querySelectorAll('[required]');
+            let isValid = true;
 
-            if (weight > 50) {
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.style.borderColor = '#e74c3c';
+                } else {
+                    field.style.borderColor = '#ddd';
+                }
+            });
+
+            if (!isValid) {
                 e.preventDefault();
-                alert('Weight cannot exceed 50kg. For larger parcels, please contact our support team.');
-                return false;
+                alert('Please fill in all required fields.');
+                window.scrollTo(0, 0);
             }
+        });
 
-            if (weight <= 0) {
-                e.preventDefault();
-                alert('Please enter a valid weight.');
-                return false;
-            }
+        // Set minimum date to today
+        document.getElementById('travel_date').min = new Date().toISOString().split('T')[0];
 
-            // Confirm submission
-            const routeSelect = document.getElementById('route_id');
-            const routeName = routeSelect.options[routeSelect.selectedIndex].dataset.routeName;
-            const totalCost = document.getElementById('total_cost').textContent;
-
-            const confirmMessage = `Confirm parcel delivery?\n\nRoute: ${routeName}\nWeight: ${weight}kg\nTotal Cost: ${totalCost}\n\nProceed with booking?`;
-
-            if (!confirm(confirmMessage)) {
-                e.preventDefault();
-                return false;
-            }
+        // Initial check for submit button state
+        document.addEventListener('DOMContentLoaded', function () {
+            calculateCost();
         });
     </script>
 </body>

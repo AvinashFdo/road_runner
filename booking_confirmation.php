@@ -157,8 +157,8 @@ if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
         <div class="container">
             <nav class="nav">
                 <div class="logo">
-     <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
-</div>
+                    <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
+                </div>
                 <ul class="nav_links">
                     <li><a href="../index.php">Home</a></li>
                     <li><a href="dashboard.php">My Dashboard</a></li>
@@ -253,8 +253,8 @@ if (isset($_GET['download']) && $_GET['download'] === 'ticket') {
                                 </td>
                                 <td>
                                     <code style="background: #f5f5f5; padding: 0.25rem 0.5rem; border-radius: 4px;">
-                                                <?php echo $booking['booking_reference']; ?>
-                                            </code>
+                                                        <?php echo $booking['booking_reference']; ?>
+                                                    </code>
                                 </td>
                                 <td><strong>LKR <?php echo number_format($booking['total_amount']); ?></strong></td>
                                 <td>

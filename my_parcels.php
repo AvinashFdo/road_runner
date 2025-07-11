@@ -189,8 +189,8 @@ function getCancellationStatusDisplay($status)
         <div class="container">
             <nav class="nav">
                 <div class="logo">
-     <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
-</div>
+                    <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
+                </div>
                 <ul class="nav_links">
                     <li><a href="index.php">Home</a></li>
                     <?php if ($_SESSION['user_type'] === 'passenger'): ?>

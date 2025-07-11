@@ -83,8 +83,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="container">
             <nav class="nav">
                 <div class="logo">
-     <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
-</div>
+                    <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
+                </div>
                 <ul class="nav_links">
                     <li><a href="index.php">Home</a></li>
                     <li><a href="login.php">Login</a></li>
@@ -96,45 +96,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Main Content -->
     <main>
-    <div class="login-page-wrapper">
-        <div class="form_container">
-            <h2 class="text_center mb_2">Login to Your Account</h2>
+        <div class="login-page-wrapper">
+            <div class="form_container">
+                <h2 class="text_center mb_2">Login to Your Account</h2>
 
-            <!-- Display Errors -->
-            <?php if (!empty($errors)): ?>
-                <div class="alert alert_error">
-                    <ul style="margin: 0; padding-left: 20px;">
-                        <?php foreach ($errors as $error): ?>
-                            <li><?php echo htmlspecialchars($error); ?></li>
-                        <?php endforeach; ?>
-                    </ul>
+                <!-- Display Errors -->
+                <?php if (!empty($errors)): ?>
+                    <div class="alert alert_error">
+                        <ul style="margin: 0; padding-left: 20px;">
+                            <?php foreach ($errors as $error): ?>
+                                <li><?php echo htmlspecialchars($error); ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Login Form -->
+                <form method="POST" action="login.php">
+                    <div class="form_group">
+                        <label for="email">Email Address:</label>
+                        <input type="email" id="email" name="email" class="form_control"
+                            value="<?php echo htmlspecialchars($email); ?>" required autofocus>
+                    </div>
+
+                    <div class="form_group">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" name="password" class="form_control" required>
+                    </div>
+
+                    <button type="submit" class="btn btn_primary">
+                        Login
+                    </button>
+                </form>
+
+                <div class="text_center mt_2">
+                    <p>Don't have an account? <a href="register.php">Register here</a></p>
                 </div>
-            <?php endif; ?>
-
-            <!-- Login Form -->
-            <form method="POST" action="login.php">
-                <div class="form_group">
-                    <label for="email">Email Address:</label>
-                    <input type="email" id="email" name="email" class="form_control"
-                        value="<?php echo htmlspecialchars($email); ?>" required autofocus>
-                </div>
-
-                <div class="form_group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" class="form_control" required>
-                </div>
-
-                <button type="submit" class="btn btn_primary">
-                    Login
-                </button>
-            </form>
-
-            <div class="text_center mt_2">
-                <p>Don't have an account? <a href="register.php">Register here</a></p>
             </div>
         </div>
-    </div>
-</main>
+    </main>
 
     <!-- Footer -->
     <footer class="footer">

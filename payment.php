@@ -307,8 +307,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="container">
             <nav class="nav">
                 <div class="logo">
-     <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
-</div>
+                    <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
+                </div>
                 <ul class="nav_links">
                     <li><a href="index.php">Home</a></li>
                     <li><a href="search_buses.php">Search Buses</a></li>
@@ -392,7 +392,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form_group">
                         <label for="cardholder_name">Cardholder Name: *</label>
                         <input type="text" id="cardholder_name" name="cardholder_name" class="form_control"
-                            placeholder="John Doe" required>
+                            placeholder="Name" required>
                     </div>
 
                     <div class="form_group">

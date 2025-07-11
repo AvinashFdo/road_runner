@@ -319,11 +319,13 @@ try {
 
         <!-- Tabbed Content -->
         <div class="tab_container">
-            <div class="tab_buttons">
-                <button class="tab_button active" onclick="switchTab('bookings')">🚌 Bus Bookings
-                    (<?php echo count($bookings); ?>)</button>
-                <button class="tab_button" onclick="switchTab('parcels')">📦 Route Parcels
-                    (<?php echo count($parcels); ?>)</button>
+            <div class="tabs mb_2">
+                <button class="tab_btn active" onclick="switchTab('bookings')" id="bookings-tab">
+                    🚌 Bus Bookings (<?php echo count($bookings); ?>)
+                </button>
+                <button class="tab_btn" onclick="switchTab('parcels')" id="parcels-tab">
+                    📦 Route Parcels (<?php echo count($parcels); ?>)
+                </button>
             </div>
 
             <!-- Bus Bookings Tab -->
@@ -486,7 +488,7 @@ try {
             });
 
             // Remove active class from all buttons
-            document.querySelectorAll('.tab_button').forEach(button => {
+            document.querySelectorAll('.tab_btn').forEach(button => {
                 button.classList.remove('active');
             });
 
@@ -494,7 +496,7 @@ try {
             document.getElementById(tabName).classList.add('active');
 
             // Add active class to clicked button
-            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
         }
     </script>
 </body>

@@ -227,8 +227,8 @@ function displayStars($rating)
         <div class="container">
             <nav class="nav">
                 <div class="logo">
-     <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
-</div>
+                    <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
+                </div>
                 <ul class="nav_links">
                     <li><a href="index.php">Home</a></li>
                     <?php if ($user_type === 'passenger'): ?>
@@ -279,9 +279,11 @@ function displayStars($rating)
             $total_reviews = count($reviews);
             $average_rating = array_sum(array_column($reviews, 'rating')) / $total_reviews;
             $five_star = count(array_filter($reviews, function ($r) {
-                return $r['rating'] == 5; }));
+                return $r['rating'] == 5;
+            }));
             $four_plus = count(array_filter($reviews, function ($r) {
-                return $r['rating'] >= 4; }));
+                return $r['rating'] >= 4;
+            }));
             ?>
 
             <div class="stats-grid">

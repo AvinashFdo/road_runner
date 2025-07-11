@@ -238,7 +238,8 @@ try {
 
             <div class="stat_card">
                 <div class="stat_number" style="color: #e74c3c;">
-                    <?php echo $parcel_revenue_stats['cancelled_parcels'] ?? 0; ?></div>
+                    <?php echo $parcel_revenue_stats['cancelled_parcels'] ?? 0; ?>
+                </div>
                 <div class="stat_label">Cancelled Parcels</div>
             </div>
         </div>
@@ -328,7 +329,8 @@ try {
                                     <div class="activity_details"><?php echo htmlspecialchars($activity['action_details']); ?>
                                     </div>
                                     <div class="activity_time">
-                                        <?php echo date('M j, g:i A', strtotime($activity['action_time'])); ?></div>
+                                        <?php echo date('M j, g:i A', strtotime($activity['action_time'])); ?>
+                                    </div>
                                 </div>
                             </div>
                         <?php endforeach; ?>

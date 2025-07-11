@@ -102,8 +102,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="container">
             <nav class="nav">
                 <div class="logo">
-     <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
-</div>
+                    <img src="images/logo.jpg" alt="Road Runner Logo" style="height: 50px; width: auto;">
+                </div>
                 <ul class="nav_links">
                     <li><a href="index.php">Home</a></li>
                     <li><a href="login.php">Login</a></li>
@@ -115,83 +115,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Main Content -->
     <main>
-    <div class="register-page-wrapper">
-        <div class="form_container">
-            <h2 class="text_center mb_2">Create Your Account</h2>
+        <div class="register-page-wrapper">
+            <div class="form_container">
+                <h2 class="text_center mb_2">Create Your Account</h2>
 
-            <!-- Display Errors -->
-            <?php if (!empty($errors)): ?>
-                <div class="alert alert_error">
-                    <ul style="margin: 0; padding-left: 20px;">
-                        <?php foreach ($errors as $error): ?>
-                            <li><?php echo htmlspecialchars($error); ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
-            <?php endif; ?>
+                <!-- Display Errors -->
+                <?php if (!empty($errors)): ?>
+                    <div class="alert alert_error">
+                        <ul style="margin: 0; padding-left: 20px;">
+                            <?php foreach ($errors as $error): ?>
+                                <li><?php echo htmlspecialchars($error); ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
 
-            <!-- Display Success Message -->
-            <?php if ($success): ?>
-                <div class="alert alert_success">
-                    <?php echo htmlspecialchars($success); ?>
-                    <p class="mt_1"><a href="login.php">Click here to login</a></p>
-                </div>
-            <?php endif; ?>
+                <!-- Display Success Message -->
+                <?php if ($success): ?>
+                    <div class="alert alert_success">
+                        <?php echo htmlspecialchars($success); ?>
+                        <p class="mt_1"><a href="login.php">Click here to login</a></p>
+                    </div>
+                <?php endif; ?>
 
-            <!-- Registration Form -->
-            <form method="POST" action="register.php">
-                <div class="form_group">
-                    <label for="full_name">Full Name:</label>
-                    <input type="text" id="full_name" name="full_name" class="form_control"
-                        value="<?php echo htmlspecialchars($full_name ?? ''); ?>" required>
-                </div>
+                <!-- Registration Form -->
+                <form method="POST" action="register.php">
+                    <div class="form_group">
+                        <label for="full_name">Full Name:</label>
+                        <input type="text" id="full_name" name="full_name" class="form_control"
+                            value="<?php echo htmlspecialchars($full_name ?? ''); ?>" required>
+                    </div>
 
-                <div class="form_group">
-                    <label for="email">Email Address:</label>
-                    <input type="email" id="email" name="email" class="form_control"
-                        value="<?php echo htmlspecialchars($email ?? ''); ?>" required>
-                </div>
+                    <div class="form_group">
+                        <label for="email">Email Address:</label>
+                        <input type="email" id="email" name="email" class="form_control"
+                            value="<?php echo htmlspecialchars($email ?? ''); ?>" required>
+                    </div>
 
-                <div class="form_group">
-                    <label for="phone">Phone Number:</label>
-                    <input type="tel" id="phone" name="phone" class="form_control" placeholder="0771234567"
-                        value="<?php echo htmlspecialchars($phone ?? ''); ?>" required>
-                </div>
+                    <div class="form_group">
+                        <label for="phone">Phone Number:</label>
+                        <input type="tel" id="phone" name="phone" class="form_control" placeholder="0771234567"
+                            value="<?php echo htmlspecialchars($phone ?? ''); ?>" required>
+                    </div>
 
-                <div class="form_group">
-                    <label for="user_type">Account Type:</label>
-                    <select id="user_type" name="user_type" class="form_control" required>
-                        <option value="passenger" <?php echo (($user_type ?? '') === 'passenger') ? 'selected' : ''; ?>>
-                            Passenger
-                        </option>
-                        <option value="operator" <?php echo (($user_type ?? '') === 'operator') ? 'selected' : ''; ?>>
-                            Bus Operator
-                        </option>
-                    </select>
-                </div>
+                    <div class="form_group">
+                        <label for="user_type">Account Type:</label>
+                        <select id="user_type" name="user_type" class="form_control" required>
+                            <option value="passenger" <?php echo (($user_type ?? '') === 'passenger') ? 'selected' : ''; ?>>
+                                Passenger
+                            </option>
+                            <option value="operator" <?php echo (($user_type ?? '') === 'operator') ? 'selected' : ''; ?>>
+                                Bus Operator
+                            </option>
+                        </select>
+                    </div>
 
-                <div class="form_group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" class="form_control" minlength="6" required>
-                </div>
+                    <div class="form_group">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" name="password" class="form_control" minlength="6"
+                            required>
+                    </div>
 
-                <div class="form_group">
-                    <label for="confirm_password">Confirm Password:</label>
-                    <input type="password" id="confirm_password" name="confirm_password" class="form_control"
-                        minlength="6" required>
-                </div>
+                    <div class="form_group">
+                        <label for="confirm_password">Confirm Password:</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form_control"
+                            minlength="6" required>
+                    </div>
 
-                <button type="submit" class="btn btn_primary">
-                    Create Account
-                </button>
-            </form>
+                    <button type="submit" class="btn btn_primary">
+                        Create Account
+                    </button>
+                </form>
 
-            <p class="text_center mt_2">
-                Already have an account? <a href="login.php">Login here</a>
-            </p>
+                <p class="text_center mt_2">
+                    Already have an account? <a href="login.php">Login here</a>
+                </p>
+            </div>
         </div>
-    </div>
-</main>
+    </main>
 
     <!-- Footer -->
     <footer class="footer">

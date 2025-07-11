@@ -79,6 +79,7 @@ $user_type = $is_logged_in ? $_SESSION['user_type'] : '';
                     <a href="register.php" class="btn">Get Started</a>
                 <?php else: ?>
                     <a href="search_buses.php" class="btn">Search Buses</a>
+                    <a href="send_parcel.php" class="btn">Send Parcels</a>
                 <?php endif; ?>
             </div>
         </section>
