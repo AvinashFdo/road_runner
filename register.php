@@ -114,7 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </header>
 
     <!-- Main Content -->
-    <main class="container" style="padding: 2rem 0;">
+    <main>
+    <div class="register-page-wrapper">
         <div class="form_container">
             <h2 class="text_center mb_2">Create Your Account</h2>
 
@@ -180,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         minlength="6" required>
                 </div>
 
-                <button type="submit" class="btn btn_primary" style="width: 100%;">
+                <button type="submit" class="btn btn_primary">
                     Create Account
                 </button>
             </form>
@@ -189,7 +190,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Already have an account? <a href="login.php">Login here</a>
             </p>
         </div>
-    </main>
+    </div>
+</main>
 
     <!-- Footer -->
     <footer class="footer">
